@@ -31,6 +31,7 @@ import (
 	"io"
 	"math"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/godbus/dbus"
@@ -51,6 +52,14 @@ func (c *conn) Write([]byte) (int, error) { return 0, nil }
 func (c *conn) Close() error              { return nil }
 
 func TestNewError(t *testing.T) {
+	defer func(save func() *dbus.Call) { freedesktop.MockBusMethodCall = save }(freedesktop.MockBusMethodCall)
+	freedesktop.MockBusMethodCall = func() *dbus.Call {
+		return &dbus.Call{Err: dbus.ErrClosed}
+	}
+	if _, err := freedesktop.New(); err == nil {
+		t.Error("expected error")
+	}
+
 	restore := freedesktop.SetSessionBus(func() (*dbus.Conn, error) {
 		return nil, dbus.ErrClosed
 	})
@@ -58,6 +67,19 @@ func TestNewError(t *testing.T) {
 
 	if _, err := freedesktop.New(); err == nil {
 		t.Error("expected error")
+	}
+}
+
+func TestClose(t *testing.T) {
+	c, err := freedesktop.New()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for i := 0; i < 10; i++ {
+		if err := c.Close(); err != nil {
+			t.Fatal(err)
+		}
 	}
 }
 
@@ -217,6 +239,70 @@ func TestNotify(t *testing.T) {
 
 func newServer(ver string) []interface{} {
 	return []interface{}{"go.notify", "", "0.0", ver}
+}
+
+func TestNotificationClosed(t *testing.T) {
+	c, err := freedesktop.New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer c.Close()
+
+	for i := uint32(1); i < 5; i++ {
+		c.MockSignal(&dbus.Signal{
+			Name: "NotificationClosed",
+			Body: []interface{}{i, i},
+		})
+	}
+	for i := uint32(1); i < 5; i++ {
+		e := freedesktop.NotificationClosed{
+			ID:     i,
+			Reason: freedesktop.Reason(i),
+		}
+		if g := <-c.NotificationClosed; !reflect.DeepEqual(g, e) {
+			t.Errorf("<- Client.NotificationClosed = %v, expected %v", g, e)
+		}
+	}
+}
+
+func TestReason(t *testing.T) {
+	for i, tt := range []struct {
+		s string
+		e freedesktop.Reason
+	}{
+		{"expired", freedesktop.ReasonExpired},
+		{"dismissed", freedesktop.ReasonDismissed},
+		{"closed", freedesktop.ReasonClosed},
+		{"undefined", freedesktop.ReasonUndefined},
+	} {
+		if g := freedesktop.Reason(i + 1); !strings.Contains(g.String(), tt.s) {
+			t.Errorf("Reason.String() = %q, expected %q", g, tt.e)
+		}
+	}
+}
+
+func TestActionInvoked(t *testing.T) {
+	c, err := freedesktop.New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer c.Close()
+
+	for i := uint32(1); i < 5; i++ {
+		c.MockSignal(&dbus.Signal{
+			Name: "ActionInvoked",
+			Body: []interface{}{i, "key"},
+		})
+	}
+	for i := uint32(1); i < 5; i++ {
+		e := freedesktop.ActionInvoked{
+			ID:  i,
+			Key: "key",
+		}
+		if g := <-c.ActionInvoked; !reflect.DeepEqual(g, e) {
+			t.Errorf("<- Client.ActionInvoked = %v, expected %v", g, e)
+		}
+	}
 }
 
 func TestAction(t *testing.T) {

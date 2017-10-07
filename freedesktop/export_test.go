@@ -34,8 +34,15 @@ func SetSessionBus(fn func() (*dbus.Conn, error)) func() {
 	return func() { sessionBus = save }
 }
 
+var MockBusMethodCall = func() *dbus.Call { return new(dbus.Call) }
+
 func init() {
 	testHookNew = func(c *Client) {
+		c.busObj = &object{
+			dest:  c.busObj.Destination(),
+			path:  c.busObj.Path(),
+			calls: []*dbus.Call{MockBusMethodCall(), MockBusMethodCall()},
+		}
 		c.obj = &object{
 			dest: notifications,
 			path: objectPath,
@@ -50,6 +57,12 @@ func (c *Client) MockMethodCall(call *dbus.Call) {
 
 func (c *Client) NumMethodCalls() int {
 	return c.obj.(*object).n
+}
+
+func (c *Client) MockSignal(sig *dbus.Signal) {
+	sig.Path = objectPath
+	sig.Name = notifications + "." + sig.Name
+	c.c <- sig
 }
 
 func (c *Client) ResetMock() {
