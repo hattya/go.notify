@@ -5,10 +5,15 @@ aster.title(title);
 
 // go
 aster.watch(/.+\.go$/, function(files) {
+  if (files.some(function(e) { return /[/\\](?:notify|syscall)_windows\.go$/.test(e); })) {
+    if (go('generate', './...')) {
+      return;
+    }
+  }
   if (go('get', '-t', '-v', './...')) {
     return;
   }
-  if (go('vet', './...')) {
+  if (go('vet', '-unsafeptr=false', './...')) {
     return;
   }
   // changed packages
