@@ -362,7 +362,7 @@ func TestHint_ImageData(t *testing.T) {
 	}
 
 	n := new(freedesktop.Notification)
-	if err := n.Hint("image-data", image.NewGray16(image.Rect(0, 0, 48, 48))); err == nil {
+	if err := n.Hint("image-data", image.NewAlpha(image.Rect(0, 0, 48, 48))); err == nil {
 		t.Error("expected error")
 	}
 }

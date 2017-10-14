@@ -37,6 +37,7 @@ import (
 	"sync"
 
 	"github.com/godbus/dbus"
+	"github.com/hattya/go.notify/internal/util"
 )
 
 const (
@@ -402,14 +403,16 @@ type ImageData struct {
 }
 
 // NewImageData returns a new raw image data structure from the specified img.
-//
-// img should be either an *image.Gray or an *image.NRGBA.
 func NewImageData(img image.Image) (*ImageData, error) {
 	size := img.Bounds().Size()
 	data := &ImageData{
 		Width:         int32(size.X),
 		Height:        int32(size.Y),
 		BitsPerSample: 8,
+	}
+	img, err := util.Convert(img)
+	if err != nil {
+		return nil, err
 	}
 	switch img := img.(type) {
 	case *image.Gray:
@@ -421,8 +424,6 @@ func NewImageData(img image.Image) (*ImageData, error) {
 		data.Alpha = true
 		data.NumChannels = 4
 		data.Data = img.Pix
-	default:
-		return nil, fmt.Errorf("unsupported image: %T", img)
 	}
 	return data, nil
 }
