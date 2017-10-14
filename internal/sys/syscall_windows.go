@@ -90,13 +90,13 @@ func IsWindowsVersionOrGreater(major, minor uint32, sp uint16) bool {
 
 const GWL_USERDATA = -21
 
-const HWND_MESSAGE = ^windows.Handle(2)
-
 const (
 	WM_CLOSE   = 0x0010
 	WM_CREATE  = 0x0001
 	WM_DESTROY = 0x0002
 )
+
+const WS_POPUP = 0x80000000
 
 type CreateStruct struct {
 	CreateParams unsafe.Pointer
@@ -151,6 +151,7 @@ type WndClassEx struct {
 //sys	PostMessage(wnd windows.Handle, msg uint32, wParam uintptr, lParam uintptr) (err error) = user32.PostMessageW
 //sys	PostQuitMessage(exitCode int32) = user32.PostQuitMessage
 //sys	RegisterClassEx(wcx *WndClassEx) (atom uint16, err error) = user32.RegisterClassExW
+//sys	RegisterWindowMessage(s *uint16) (msg uint32, err error) = user32.RegisterWindowMessageW
 //sys	setWindowLong(wnd windows.Handle, i int32, ptr unsafe.Pointer) (oldptr uintptr, err error) = user32.SetWindowLongW
 //sys	setWindowLongPtr(wnd windows.Handle, i int32, ptr unsafe.Pointer) (oldptr uintptr, err error) = user32.SetWindowLongPtrW
 //sys	TranslateMessage(msg *Msg) (err error) = user32.TranslateMessage

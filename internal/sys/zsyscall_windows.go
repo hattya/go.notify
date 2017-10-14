@@ -41,22 +41,23 @@ var (
 	moduser32   = windows.NewLazySystemDLL("user32.dll")
 	modshell32  = windows.NewLazySystemDLL("shell32.dll")
 
-	procVerifyVersionInfoW  = modkernel32.NewProc("VerifyVersionInfoW")
-	procVerSetConditionMask = modkernel32.NewProc("VerSetConditionMask")
-	procCreateWindowExW     = moduser32.NewProc("CreateWindowExW")
-	procDefWindowProcW      = moduser32.NewProc("DefWindowProcW")
-	procDestroyWindow       = moduser32.NewProc("DestroyWindow")
-	procDispatchMessageW    = moduser32.NewProc("DispatchMessageW")
-	procGetMessageW         = moduser32.NewProc("GetMessageW")
-	procGetWindowLongW      = moduser32.NewProc("GetWindowLongW")
-	procGetWindowLongPtrW   = moduser32.NewProc("GetWindowLongPtrW")
-	procPostMessageW        = moduser32.NewProc("PostMessageW")
-	procPostQuitMessage     = moduser32.NewProc("PostQuitMessage")
-	procRegisterClassExW    = moduser32.NewProc("RegisterClassExW")
-	procSetWindowLongW      = moduser32.NewProc("SetWindowLongW")
-	procSetWindowLongPtrW   = moduser32.NewProc("SetWindowLongPtrW")
-	procTranslateMessage    = moduser32.NewProc("TranslateMessage")
-	procShell_NotifyIconW   = modshell32.NewProc("Shell_NotifyIconW")
+	procVerifyVersionInfoW     = modkernel32.NewProc("VerifyVersionInfoW")
+	procVerSetConditionMask    = modkernel32.NewProc("VerSetConditionMask")
+	procCreateWindowExW        = moduser32.NewProc("CreateWindowExW")
+	procDefWindowProcW         = moduser32.NewProc("DefWindowProcW")
+	procDestroyWindow          = moduser32.NewProc("DestroyWindow")
+	procDispatchMessageW       = moduser32.NewProc("DispatchMessageW")
+	procGetMessageW            = moduser32.NewProc("GetMessageW")
+	procGetWindowLongW         = moduser32.NewProc("GetWindowLongW")
+	procGetWindowLongPtrW      = moduser32.NewProc("GetWindowLongPtrW")
+	procPostMessageW           = moduser32.NewProc("PostMessageW")
+	procPostQuitMessage        = moduser32.NewProc("PostQuitMessage")
+	procRegisterClassExW       = moduser32.NewProc("RegisterClassExW")
+	procRegisterWindowMessageW = moduser32.NewProc("RegisterWindowMessageW")
+	procSetWindowLongW         = moduser32.NewProc("SetWindowLongW")
+	procSetWindowLongPtrW      = moduser32.NewProc("SetWindowLongPtrW")
+	procTranslateMessage       = moduser32.NewProc("TranslateMessage")
+	procShell_NotifyIconW      = modshell32.NewProc("Shell_NotifyIconW")
 )
 
 func VerifyVersionInfo(vi *OSVersionInfoEx, typeMask uint32, conditionMask uint64) (ok bool) {
@@ -168,6 +169,19 @@ func RegisterClassEx(wcx *WndClassEx) (atom uint16, err error) {
 	r0, _, e1 := syscall.Syscall(procRegisterClassExW.Addr(), 1, uintptr(unsafe.Pointer(wcx)), 0, 0)
 	atom = uint16(r0)
 	if atom == 0 {
+		if e1 != 0 {
+			err = errnoErr(e1)
+		} else {
+			err = syscall.EINVAL
+		}
+	}
+	return
+}
+
+func RegisterWindowMessage(s *uint16) (msg uint32, err error) {
+	r0, _, e1 := syscall.Syscall(procRegisterWindowMessageW.Addr(), 1, uintptr(unsafe.Pointer(s)), 0, 0)
+	msg = uint32(r0)
+	if msg == 0 {
 		if e1 != 0 {
 			err = errnoErr(e1)
 		} else {

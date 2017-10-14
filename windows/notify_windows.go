@@ -53,6 +53,8 @@ var (
 
 const className = "go.notify.Window"
 
+var _WM_TASKBARCREATED uint32
+
 func init() {
 	p, _ := windows.UTF16PtrFromString(className)
 	wcx := &sys.WndClassEx{
@@ -63,6 +65,13 @@ func init() {
 	if _, err := sys.RegisterClassEx(wcx); err != nil {
 		panic(err)
 	}
+
+	p, _ = windows.UTF16PtrFromString("TaskbarCreated")
+	wm, err := sys.RegisterWindowMessage(p)
+	if err != nil {
+		panic(err)
+	}
+	_WM_TASKBARCREATED = wm
 }
 
 // for testing
@@ -243,7 +252,8 @@ func (ni *NotifyIcon) loop() {
 
 	cp, _ := windows.UTF16PtrFromString(className)
 	wp, _ := windows.UTF16PtrFromString(ni.name)
-	wnd, err := sys.CreateWindowEx(0, cp, wp, 0, 0, 0, 0, 0, sys.HWND_MESSAGE, 0, 0, unsafe.Pointer(ni))
+	// create WS_POPUP window to receive TaskbarCreated message
+	wnd, err := sys.CreateWindowEx(0, cp, wp, sys.WS_POPUP, 0, 0, 0, 0, 0, 0, 0, unsafe.Pointer(ni))
 	if err != nil {
 		ni.err <- err
 		return
@@ -276,6 +286,12 @@ func (ni *NotifyIcon) windowProc(wnd windows.Handle, msg uint32, wParam, lParam 
 		sys.PostQuitMessage(0)
 		ni.err <- err
 	default:
+		if msg == _WM_TASKBARCREATED {
+			atomic.StoreInt32(&ni.added, 0)
+			if err := ni.Add(); err != nil {
+				panic(err)
+			}
+		}
 		return sys.DefWindowProc(wnd, msg, wParam, lParam)
 	}
 	return 0
