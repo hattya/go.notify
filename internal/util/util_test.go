@@ -46,6 +46,7 @@ func TestConvert(t *testing.T) {
 		reflect.ValueOf(func(r image.Rectangle) image.Image { return image.NewPaletted(r, palette.Plan9) }),
 		reflect.ValueOf(image.NewRGBA),
 		reflect.ValueOf(image.NewRGBA64),
+		reflect.ValueOf(func(r image.Rectangle) image.Image { return image.NewYCbCr(r, image.YCbCrSubsampleRatio420) }),
 	} {
 		rv := v.Call([]reflect.Value{reflect.ValueOf(image.Rect(0, 0, 32, 32))})
 		img := rv[0].Interface().(image.Image)
