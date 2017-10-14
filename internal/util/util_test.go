@@ -38,6 +38,7 @@ func TestConvert(t *testing.T) {
 	for _, v := range []reflect.Value{
 		reflect.ValueOf(image.NewCMYK),
 		reflect.ValueOf(image.NewGray),
+		reflect.ValueOf(image.NewGray16),
 		reflect.ValueOf(image.NewNRGBA),
 	} {
 		rv := v.Call([]reflect.Value{reflect.ValueOf(image.Rect(0, 0, 32, 32))})

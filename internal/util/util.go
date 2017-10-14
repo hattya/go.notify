@@ -34,16 +34,24 @@ import (
 
 // Convert converts the specified img to either image.Gray or image.NRGBA.
 func Convert(img image.Image) (image.Image, error) {
+	var gray bool
 	switch img := img.(type) {
 	case *image.CMYK:
 	case *image.Gray:
 		return img, nil
+	case *image.Gray16:
+		gray = true
 	case *image.NRGBA:
 		return img, nil
 	default:
 		return nil, fmt.Errorf("unsupported image: %T", img)
 	}
-	dst := image.NewNRGBA(img.Bounds())
+	var dst draw.Image
+	if gray {
+		dst = image.NewGray(img.Bounds())
+	} else {
+		dst = image.NewNRGBA(img.Bounds())
+	}
 	draw.Draw(dst, dst.Bounds(), img, image.ZP, draw.Src)
 	return dst, nil
 }
