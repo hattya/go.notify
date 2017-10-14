@@ -47,6 +47,7 @@ func Convert(img image.Image) (image.Image, error) {
 	case *image.NYCbCrA:
 	case *image.Paletted:
 	case *image.RGBA:
+	case *image.RGBA64:
 	default:
 		return nil, fmt.Errorf("unsupported image: %T", img)
 	}
