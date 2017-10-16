@@ -92,10 +92,24 @@ func IsWindowsVersionOrGreater(major, minor uint32, sp uint16) bool {
 	return VerifyVersionInfo(&vi, VER_MAJORVERSION|VER_MINORVERSION|VER_SERVICEPACKMAJOR, VerSetConditionMask(VerSetConditionMask(VerSetConditionMask(0, VER_MAJORVERSION, VER_GREATER_EQUAL), VER_MINORVERSION, VER_GREATER_EQUAL), VER_SERVICEPACKMAJOR, VER_GREATER_EQUAL))
 }
 
+//sys	GetModuleHandle(name *uint16) (h windows.Handle, err error) = GetModuleHandleW
 //sys	VerifyVersionInfo(vi *OSVersionInfoEx, typeMask uint32, conditionMask uint64) (ok bool) = VerifyVersionInfoW
 //sys	VerSetConditionMask(lConditionMask uint64, typeBitMask uint32, conditionMask uint8) (mask uint64)
 
 const GWL_USERDATA = -21
+
+const (
+	IMAGE_BITMAP = iota
+	IMAGE_ICON
+	IMAGE_CURSOR
+)
+
+const (
+	LR_DEFAULTSIZE = 0x00000040
+	LR_SHARED      = 0x00008000
+)
+
+const OIC_SAMPLE = 32512
 
 const (
 	WM_CLOSE   = 0x0010
@@ -156,6 +170,10 @@ type WndClassEx struct {
 	IconSm     windows.Handle
 }
 
+func MakeIntResource(i uint16) *uint16 {
+	return (*uint16)(unsafe.Pointer(uintptr(i)))
+}
+
 //sys	CreateIconIndirect(ii *IconInfo) (icon windows.Handle, err error) = user32.
 //sys	CreateWindowEx(exStyle uint32, className *uint16, windowName *uint16, style uint32, x int32, y int32, w int32, h int32, parent windows.Handle, menu windows.Handle, inst windows.Handle, param unsafe.Pointer) (wnd windows.Handle, err error) = user32.CreateWindowExW
 //sys	DefWindowProc(wnd windows.Handle, msg uint32, wParam uintptr, lParam uintptr) (res uintptr) = user32.DefWindowProcW
@@ -166,6 +184,7 @@ type WndClassEx struct {
 //sys	GetMessage(msg *Msg, wnd windows.Handle, msgFilterMin uint32, msgFilterMax uint32) (ret int32, err error) [failretval==-1] = user32.GetMessageW
 //sys	getWindowLong(wnd windows.Handle, i int32) (ptr uintptr, err error) = user32.GetWindowLongW
 //sys	getWindowLongPtr(wnd windows.Handle, i int32) (ptr uintptr, err error) = user32.GetWindowLongPtrW
+//sys	LoadImage(inst windows.Handle, name *uint16, typ uint32, cxDesired int32, cyDesired int32, load uint32) (h windows.Handle, err error) = user32.LoadImageW
 //sys	PostMessage(wnd windows.Handle, msg uint32, wParam uintptr, lParam uintptr) (err error) = user32.PostMessageW
 //sys	PostQuitMessage(exitCode int32) = user32.PostQuitMessage
 //sys	RegisterClassEx(wcx *WndClassEx) (atom uint16, err error) = user32.RegisterClassExW

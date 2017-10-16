@@ -42,6 +42,7 @@ var (
 	modgdi32    = windows.NewLazySystemDLL("gdi32.dll")
 	modshell32  = windows.NewLazySystemDLL("shell32.dll")
 
+	procGetModuleHandleW       = modkernel32.NewProc("GetModuleHandleW")
 	procVerifyVersionInfoW     = modkernel32.NewProc("VerifyVersionInfoW")
 	procVerSetConditionMask    = modkernel32.NewProc("VerSetConditionMask")
 	procCreateIconIndirect     = moduser32.NewProc("CreateIconIndirect")
@@ -54,6 +55,7 @@ var (
 	procGetMessageW            = moduser32.NewProc("GetMessageW")
 	procGetWindowLongW         = moduser32.NewProc("GetWindowLongW")
 	procGetWindowLongPtrW      = moduser32.NewProc("GetWindowLongPtrW")
+	procLoadImageW             = moduser32.NewProc("LoadImageW")
 	procPostMessageW           = moduser32.NewProc("PostMessageW")
 	procPostQuitMessage        = moduser32.NewProc("PostQuitMessage")
 	procRegisterClassExW       = moduser32.NewProc("RegisterClassExW")
@@ -70,6 +72,19 @@ var (
 	procSetPixel               = modgdi32.NewProc("SetPixel")
 	procShell_NotifyIconW      = modshell32.NewProc("Shell_NotifyIconW")
 )
+
+func GetModuleHandle(name *uint16) (h windows.Handle, err error) {
+	r0, _, e1 := syscall.Syscall(procGetModuleHandleW.Addr(), 1, uintptr(unsafe.Pointer(name)), 0, 0)
+	h = windows.Handle(r0)
+	if h == 0 {
+		if e1 != 0 {
+			err = errnoErr(e1)
+		} else {
+			err = syscall.EINVAL
+		}
+	}
+	return
+}
 
 func VerifyVersionInfo(vi *OSVersionInfoEx, typeMask uint32, conditionMask uint64) (ok bool) {
 	r0, _, _ := syscall.Syscall(procVerifyVersionInfoW.Addr(), 3, uintptr(unsafe.Pointer(vi)), uintptr(typeMask), uintptr(conditionMask))
@@ -188,6 +203,19 @@ func getWindowLongPtr(wnd windows.Handle, i int32) (ptr uintptr, err error) {
 	r0, _, e1 := syscall.Syscall(procGetWindowLongPtrW.Addr(), 2, uintptr(wnd), uintptr(i), 0)
 	ptr = uintptr(r0)
 	if ptr == 0 {
+		if e1 != 0 {
+			err = errnoErr(e1)
+		} else {
+			err = syscall.EINVAL
+		}
+	}
+	return
+}
+
+func LoadImage(inst windows.Handle, name *uint16, typ uint32, cxDesired int32, cyDesired int32, load uint32) (h windows.Handle, err error) {
+	r0, _, e1 := syscall.Syscall6(procLoadImageW.Addr(), 6, uintptr(inst), uintptr(unsafe.Pointer(name)), uintptr(typ), uintptr(cxDesired), uintptr(cyDesired), uintptr(load))
+	h = windows.Handle(r0)
+	if h == 0 {
 		if e1 != 0 {
 			err = errnoErr(e1)
 		} else {

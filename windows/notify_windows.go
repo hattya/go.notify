@@ -77,7 +77,10 @@ func init() {
 }
 
 // for testing
-var testHookPrepare func(*NotifyIcon)
+var (
+	loadImage       = sys.LoadImage
+	testHookPrepare func(*NotifyIcon)
+)
 
 // NotifyIcon represents a notification icon in the notification area.
 type NotifyIcon struct {
@@ -435,6 +438,19 @@ func LoadImage(img image.Image) (icon *Icon, err error) {
 	if err == nil {
 		icon = &Icon{h: h}
 		runtime.SetFinalizer(icon, (*Icon).Close)
+	}
+	return
+}
+
+// LoadIcon returns a new Icon from the specified icon resource.
+func LoadIcon(i uint16) (icon *Icon, err error) {
+	inst, err := sys.GetModuleHandle(nil)
+	if err != nil {
+		return
+	}
+	h, err := loadImage(inst, sys.MakeIntResource(i), sys.IMAGE_ICON, 0, 0, sys.LR_DEFAULTSIZE)
+	if err == nil {
+		icon = &Icon{h: h}
 	}
 	return
 }

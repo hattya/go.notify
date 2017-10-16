@@ -32,6 +32,9 @@ import (
 )
 
 func init() {
+	loadImage = func(windows.Handle, *uint16, uint32, int32, int32, uint32) (windows.Handle, error) {
+		return sys.LoadImage(0, sys.MakeIntResource(32512), sys.IMAGE_ICON, 0, 0, sys.LR_DEFAULTSIZE|sys.LR_SHARED)
+	}
 	testHookPrepare = func(ni *NotifyIcon) {
 		if ni.data.Flags&sys.NIF_GUID != 0 {
 			// test binary is in a temporary folder

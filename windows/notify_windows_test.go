@@ -233,6 +233,16 @@ func TestLoadImage(t *testing.T) {
 	}
 }
 
+func TestLoadIcon(t *testing.T) {
+	icon, err := windows.LoadIcon(1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := icon.Close(); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestGUID(t *testing.T) {
 	e := syscall.GUID{
 		Data1: 0x23977b55,
