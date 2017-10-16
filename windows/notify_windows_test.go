@@ -27,6 +27,10 @@
 package windows_test
 
 import (
+	"image"
+	_ "image/png"
+	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
@@ -66,6 +70,13 @@ func TestAdd(t *testing.T) {
 	}
 	defer ni.Close()
 
+	icon, err := load()
+	if err != nil {
+		t.Error(err)
+	}
+	defer icon.Close()
+
+	ni.Icon = icon
 	ni.GUID = guid
 	if err := ni.Add(); err != nil {
 		t.Error(err)
@@ -92,6 +103,13 @@ func TestModify(t *testing.T) {
 		t.Error("expected error")
 	}
 
+	icon, err := load()
+	if err != nil {
+		t.Error(err)
+	}
+	defer icon.Close()
+
+	ni.Icon = icon
 	ni.GUID = guid
 	if err := ni.Add(); err != nil {
 		t.Fatal(err)
@@ -113,12 +131,20 @@ func TestNotify(t *testing.T) {
 	}
 	defer ni.Close()
 
+	icon, err := load()
+	if err != nil {
+		t.Error(err)
+	}
+	defer icon.Close()
+
+	ni.Icon = icon
 	ni.GUID = guid
 	for _, v := range []windows.IconType{
 		windows.IconNone,
 		windows.IconInfo,
 		windows.IconWarn,
 		windows.IconError,
+		windows.IconUser,
 	} {
 		n := &windows.Notification{
 			Title:    "Title",
@@ -129,9 +155,18 @@ func TestNotify(t *testing.T) {
 			t.Error(err)
 		}
 	}
+	n := &windows.Notification{
+		Title:    "Title",
+		Body:     "IconUser with BalloonIcon",
+		IconType: windows.IconUser,
+		Icon:     icon,
+	}
+	if err := ni.Notify(n); err != nil {
+		t.Error(err)
+	}
 	// unknown IconType
 	v := windows.IconType(9)
-	n := &windows.Notification{
+	n = &windows.Notification{
 		Title:    "Title",
 		Body:     v.String(),
 		IconType: v,
@@ -150,17 +185,51 @@ func TestNotify(t *testing.T) {
 	}
 }
 
+func load() (*windows.Icon, error) {
+	f, err := os.Open(filepath.Join("..", "gopher.png"))
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	img, _, err := image.Decode(f)
+	if err != nil {
+		return nil, err
+	}
+	return windows.LoadImage(img)
+}
+
 func TestIconType(t *testing.T) {
 	for i, e := range []string{
 		"IconNone",
 		"IconInfo",
 		"IconWarn",
 		"IconError",
-		"IconType(4)",
+		"IconUser",
+		"IconType(5)",
 	} {
 		if g := windows.IconType(i).String(); g != e {
 			t.Errorf("IconType.String() = %v, expected %v", g, e)
 		}
+	}
+}
+
+func TestLoadImage(t *testing.T) {
+	for _, v := range []reflect.Value{
+		reflect.ValueOf(image.NewGray),
+		reflect.ValueOf(image.NewNRGBA),
+	} {
+		rv := v.Call([]reflect.Value{reflect.ValueOf(image.Rect(0, 0, 32, 32))})
+		icon, err := windows.LoadImage(rv[0].Interface().(image.Image))
+		if err != nil {
+			t.Error(err)
+		} else {
+			icon.Close()
+		}
+	}
+
+	if _, err := windows.LoadImage(image.NewAlpha(image.Rect(0, 0, 32, 32))); err == nil {
+		t.Error("expected error")
 	}
 }
 

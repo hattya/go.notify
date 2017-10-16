@@ -39,14 +39,18 @@ func errnoErr(e syscall.Errno) error {
 var (
 	modkernel32 = windows.NewLazySystemDLL("kernel32.dll")
 	moduser32   = windows.NewLazySystemDLL("user32.dll")
+	modgdi32    = windows.NewLazySystemDLL("gdi32.dll")
 	modshell32  = windows.NewLazySystemDLL("shell32.dll")
 
 	procVerifyVersionInfoW     = modkernel32.NewProc("VerifyVersionInfoW")
 	procVerSetConditionMask    = modkernel32.NewProc("VerSetConditionMask")
+	procCreateIconIndirect     = moduser32.NewProc("CreateIconIndirect")
 	procCreateWindowExW        = moduser32.NewProc("CreateWindowExW")
 	procDefWindowProcW         = moduser32.NewProc("DefWindowProcW")
+	procDestroyIcon            = moduser32.NewProc("DestroyIcon")
 	procDestroyWindow          = moduser32.NewProc("DestroyWindow")
 	procDispatchMessageW       = moduser32.NewProc("DispatchMessageW")
+	procGetDC                  = moduser32.NewProc("GetDC")
 	procGetMessageW            = moduser32.NewProc("GetMessageW")
 	procGetWindowLongW         = moduser32.NewProc("GetWindowLongW")
 	procGetWindowLongPtrW      = moduser32.NewProc("GetWindowLongPtrW")
@@ -54,9 +58,16 @@ var (
 	procPostQuitMessage        = moduser32.NewProc("PostQuitMessage")
 	procRegisterClassExW       = moduser32.NewProc("RegisterClassExW")
 	procRegisterWindowMessageW = moduser32.NewProc("RegisterWindowMessageW")
+	procReleaseDC              = moduser32.NewProc("ReleaseDC")
 	procSetWindowLongW         = moduser32.NewProc("SetWindowLongW")
 	procSetWindowLongPtrW      = moduser32.NewProc("SetWindowLongPtrW")
 	procTranslateMessage       = moduser32.NewProc("TranslateMessage")
+	procCreateCompatibleBitmap = modgdi32.NewProc("CreateCompatibleBitmap")
+	procCreateCompatibleDC     = modgdi32.NewProc("CreateCompatibleDC")
+	procDeleteDC               = modgdi32.NewProc("DeleteDC")
+	procDeleteObject           = modgdi32.NewProc("DeleteObject")
+	procSelectObject           = modgdi32.NewProc("SelectObject")
+	procSetPixel               = modgdi32.NewProc("SetPixel")
 	procShell_NotifyIconW      = modshell32.NewProc("Shell_NotifyIconW")
 )
 
@@ -69,6 +80,19 @@ func VerifyVersionInfo(vi *OSVersionInfoEx, typeMask uint32, conditionMask uint6
 func VerSetConditionMask(lConditionMask uint64, typeBitMask uint32, conditionMask uint8) (mask uint64) {
 	r0, _, _ := syscall.Syscall(procVerSetConditionMask.Addr(), 3, uintptr(lConditionMask), uintptr(typeBitMask), uintptr(conditionMask))
 	mask = uint64(r0)
+	return
+}
+
+func CreateIconIndirect(ii *IconInfo) (icon windows.Handle, err error) {
+	r0, _, e1 := syscall.Syscall(procCreateIconIndirect.Addr(), 1, uintptr(unsafe.Pointer(ii)), 0, 0)
+	icon = windows.Handle(r0)
+	if icon == 0 {
+		if e1 != 0 {
+			err = errnoErr(e1)
+		} else {
+			err = syscall.EINVAL
+		}
+	}
 	return
 }
 
@@ -91,6 +115,18 @@ func DefWindowProc(wnd windows.Handle, msg uint32, wParam uintptr, lParam uintpt
 	return
 }
 
+func DestroyIcon(icon windows.Handle) (err error) {
+	r1, _, e1 := syscall.Syscall(procDestroyIcon.Addr(), 1, uintptr(icon), 0, 0)
+	if r1 == 0 {
+		if e1 != 0 {
+			err = errnoErr(e1)
+		} else {
+			err = syscall.EINVAL
+		}
+	}
+	return
+}
+
 func DestroyWindow(wnd windows.Handle) (err error) {
 	r1, _, e1 := syscall.Syscall(procDestroyWindow.Addr(), 1, uintptr(wnd), 0, 0)
 	if r1 == 0 {
@@ -106,6 +142,19 @@ func DestroyWindow(wnd windows.Handle) (err error) {
 func DispatchMessage(msg *Msg) (res uintptr) {
 	r0, _, _ := syscall.Syscall(procDispatchMessageW.Addr(), 1, uintptr(unsafe.Pointer(msg)), 0, 0)
 	res = uintptr(r0)
+	return
+}
+
+func GetDC(wnd windows.Handle) (dc windows.Handle, err error) {
+	r0, _, e1 := syscall.Syscall(procGetDC.Addr(), 1, uintptr(wnd), 0, 0)
+	dc = windows.Handle(r0)
+	if dc == 0 {
+		if e1 != 0 {
+			err = errnoErr(e1)
+		} else {
+			err = syscall.EINVAL
+		}
+	}
 	return
 }
 
@@ -191,6 +240,18 @@ func RegisterWindowMessage(s *uint16) (msg uint32, err error) {
 	return
 }
 
+func ReleaseDC(wnd windows.Handle, dc windows.Handle) (err error) {
+	r1, _, e1 := syscall.Syscall(procReleaseDC.Addr(), 2, uintptr(wnd), uintptr(dc), 0)
+	if r1 == 0 {
+		if e1 != 0 {
+			err = errnoErr(e1)
+		} else {
+			err = syscall.EINVAL
+		}
+	}
+	return
+}
+
 func setWindowLong(wnd windows.Handle, i int32, ptr unsafe.Pointer) (oldptr uintptr, err error) {
 	r0, _, e1 := syscall.Syscall(procSetWindowLongW.Addr(), 3, uintptr(wnd), uintptr(i), uintptr(ptr))
 	oldptr = uintptr(r0)
@@ -220,6 +281,81 @@ func setWindowLongPtr(wnd windows.Handle, i int32, ptr unsafe.Pointer) (oldptr u
 func TranslateMessage(msg *Msg) (err error) {
 	r1, _, e1 := syscall.Syscall(procTranslateMessage.Addr(), 1, uintptr(unsafe.Pointer(msg)), 0, 0)
 	if r1 == 0 {
+		if e1 != 0 {
+			err = errnoErr(e1)
+		} else {
+			err = syscall.EINVAL
+		}
+	}
+	return
+}
+
+func CreateCompatibleBitmap(dc windows.Handle, w int32, h int32) (bm windows.Handle, err error) {
+	r0, _, e1 := syscall.Syscall(procCreateCompatibleBitmap.Addr(), 3, uintptr(dc), uintptr(w), uintptr(h))
+	bm = windows.Handle(r0)
+	if bm == 0 {
+		if e1 != 0 {
+			err = errnoErr(e1)
+		} else {
+			err = syscall.EINVAL
+		}
+	}
+	return
+}
+
+func CreateCompatibleDC(dc windows.Handle) (mdc windows.Handle, err error) {
+	r0, _, e1 := syscall.Syscall(procCreateCompatibleDC.Addr(), 1, uintptr(dc), 0, 0)
+	mdc = windows.Handle(r0)
+	if mdc == 0 {
+		if e1 != 0 {
+			err = errnoErr(e1)
+		} else {
+			err = syscall.EINVAL
+		}
+	}
+	return
+}
+
+func DeleteDC(dc windows.Handle) (err error) {
+	r1, _, e1 := syscall.Syscall(procDeleteDC.Addr(), 1, uintptr(dc), 0, 0)
+	if r1 == 0 {
+		if e1 != 0 {
+			err = errnoErr(e1)
+		} else {
+			err = syscall.EINVAL
+		}
+	}
+	return
+}
+
+func DeleteObject(obj windows.Handle) (err error) {
+	r1, _, e1 := syscall.Syscall(procDeleteObject.Addr(), 1, uintptr(obj), 0, 0)
+	if r1 == 0 {
+		if e1 != 0 {
+			err = errnoErr(e1)
+		} else {
+			err = syscall.EINVAL
+		}
+	}
+	return
+}
+
+func SelectObject(dc windows.Handle, obj windows.Handle) (oldobj windows.Handle, err error) {
+	r0, _, e1 := syscall.Syscall(procSelectObject.Addr(), 2, uintptr(dc), uintptr(obj), 0)
+	oldobj = windows.Handle(r0)
+	if oldobj == 0 {
+		if e1 != 0 {
+			err = errnoErr(e1)
+		} else {
+			err = syscall.EINVAL
+		}
+	}
+	return
+}
+
+func SetPixel(dc windows.Handle, x int32, y int32, color uint32) (err error) {
+	r1, _, e1 := syscall.Syscall6(procSetPixel.Addr(), 4, uintptr(dc), uintptr(x), uintptr(y), uintptr(color), 0, 0)
+	if r1 == ^uintptr(0) {
 		if e1 != 0 {
 			err = errnoErr(e1)
 		} else {

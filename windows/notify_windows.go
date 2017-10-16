@@ -36,6 +36,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"image"
 	"runtime"
 	"strconv"
 	"sync"
@@ -43,6 +44,7 @@ import (
 	"unsafe"
 
 	"github.com/hattya/go.notify/internal/sys"
+	"github.com/hattya/go.notify/internal/util"
 	"golang.org/x/sys/windows"
 )
 
@@ -79,6 +81,7 @@ var testHookPrepare func(*NotifyIcon)
 
 // NotifyIcon represents a notification icon in the notification area.
 type NotifyIcon struct {
+	Icon *Icon
 	GUID GUID // requires Windows 7 or later
 
 	name string
@@ -170,6 +173,15 @@ func (ni *NotifyIcon) Modify() error {
 
 func (ni *NotifyIcon) prepare() error {
 	switch {
+	case ni.Icon != nil:
+		ni.data.Flags |= sys.NIF_ICON
+		ni.data.Icon = ni.Icon.h
+	case ni.data.Flags&sys.NIF_ICON != 0:
+		ni.data.Flags ^= sys.NIF_ICON
+		ni.data.Icon = 0
+	}
+
+	switch {
 	case ni.GUID != "":
 		if !sys.IsWindows7OrGreater() {
 			return VersionError("7")
@@ -217,6 +229,17 @@ func (ni *NotifyIcon) Notify(n *Notification) error {
 	switch n.IconType {
 	case IconNone, IconInfo, IconWarn, IconError:
 		data.InfoFlags |= uint32(n.IconType)
+	case IconUser:
+		if !sys.IsWindowsXPSP2OrGreater() {
+			return VersionError("XP SP2")
+		}
+		data.InfoFlags |= uint32(n.IconType)
+		if n.Icon != nil {
+			if !sys.IsShellDLLVersionOrGreater(6, 0, 6) {
+				return VersionError("Vista")
+			}
+			data.BalloonIcon = n.Icon.h
+		}
 	default:
 		return ErrIcon
 	}
@@ -314,6 +337,7 @@ type Notification struct {
 	Title    string
 	Body     string
 	IconType IconType
+	Icon     *Icon // requires Windows Vista or later
 	Sound    bool
 }
 
@@ -326,7 +350,101 @@ const (
 	IconInfo  IconType = sys.NIIF_INFO
 	IconWarn  IconType = sys.NIIF_WARNING
 	IconError IconType = sys.NIIF_ERROR
+	IconUser  IconType = sys.NIIF_USER // requires Windows XP SP2 or later
 )
+
+// Icon represents a handle to an icon.
+type Icon struct {
+	h windows.Handle
+}
+
+// LoadImage returns a new Icon from the specified img.
+func LoadImage(img image.Image) (icon *Icon, err error) {
+	img, err = util.Convert(img)
+	if err != nil {
+		return
+	}
+	size := img.Bounds().Size()
+
+	dc, err := sys.GetDC(0)
+	if err != nil {
+		return
+	}
+	defer sys.ReleaseDC(0, dc)
+	// bitmask bitmap
+	mdc1, err := sys.CreateCompatibleDC(dc)
+	if err != nil {
+		return
+	}
+	defer sys.DeleteDC(mdc1)
+	mask, err := sys.CreateCompatibleBitmap(dc, int32(size.X), int32(size.Y))
+	if err != nil {
+		return
+	}
+	defer sys.DeleteObject(mask)
+	obj1, err := sys.SelectObject(mdc1, mask)
+	if err != nil {
+		return
+	}
+	defer sys.SelectObject(mdc1, obj1)
+	// color bitmap
+	mdc2, err := sys.CreateCompatibleDC(dc)
+	if err != nil {
+		return
+	}
+	defer sys.DeleteDC(mdc2)
+	bm, err := sys.CreateCompatibleBitmap(dc, int32(size.X), int32(size.Y))
+	if err != nil {
+		return
+	}
+	defer sys.DeleteObject(bm)
+	obj2, err := sys.SelectObject(mdc2, bm)
+	if err != nil {
+		return
+	}
+	defer sys.SelectObject(mdc2, obj2)
+
+	switch img := img.(type) {
+	case *image.Gray:
+		for y := 0; y < size.Y; y++ {
+			for x := 0; x < size.X; x++ {
+				c := img.GrayAt(x, y)
+				sys.SetPixel(mdc2, int32(x), int32(y), sys.RGB(c.Y, c.Y, c.Y))
+			}
+		}
+	case *image.NRGBA:
+		for y := 0; y < size.Y; y++ {
+			for x := 0; x < size.X; x++ {
+				c := img.NRGBAAt(x, y)
+				a := 255 - c.A
+				sys.SetPixel(mdc1, int32(x), int32(y), sys.RGB(a, a, a))
+				sys.SetPixel(mdc2, int32(x), int32(y), sys.RGB(c.R, c.G, c.B))
+			}
+		}
+	}
+	// deselect from device context
+	sys.SelectObject(mdc1, obj1)
+	sys.SelectObject(mdc2, obj2)
+	h, err := sys.CreateIconIndirect(&sys.IconInfo{
+		Icon:     1,
+		XHotspot: 0,
+		YHotspot: 0,
+		Mask:     mask,
+		Color:    bm,
+	})
+	if err == nil {
+		icon = &Icon{h: h}
+		runtime.SetFinalizer(icon, (*Icon).Close)
+	}
+	return
+}
+
+// Close destroys the Icon.
+func (icon *Icon) Close() error {
+	err := sys.DestroyIcon(icon.h)
+	runtime.SetFinalizer(icon, nil)
+	return err
+}
 
 // GUID represents a textual representation of the GUID.
 //

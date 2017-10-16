@@ -34,7 +34,10 @@ import (
 	"golang.org/x/sys/windows"
 )
 
-const _WIN32_WINNT_WIN7 = 0x0601
+const (
+	_WIN32_WINNT_WINXP = 0x0501
+	_WIN32_WINNT_WIN7  = 0x0601
+)
 
 type OSVersionInfoEx struct {
 	OSVersionInfoSize uint32
@@ -70,6 +73,10 @@ const (
 	VER_AND
 	VER_OR
 )
+
+func IsWindowsXPSP2OrGreater() bool {
+	return IsWindowsVersionOrGreater(_WIN32_WINNT_WINXP>>8&0xff, _WIN32_WINNT_WINXP&0xff, 2)
+}
 
 func IsWindows7OrGreater() bool {
 	return IsWindowsVersionOrGreater(_WIN32_WINNT_WIN7>>8&0xff, _WIN32_WINNT_WIN7&0xff, 0)
@@ -113,6 +120,14 @@ type CreateStruct struct {
 	ExStyle      uint32
 }
 
+type IconInfo struct {
+	Icon     int32
+	XHotspot uint32
+	YHotspot uint32
+	Mask     windows.Handle
+	Color    windows.Handle
+}
+
 type Msg struct {
 	Wnd     windows.Handle
 	Message uint32
@@ -141,10 +156,13 @@ type WndClassEx struct {
 	IconSm     windows.Handle
 }
 
+//sys	CreateIconIndirect(ii *IconInfo) (icon windows.Handle, err error) = user32.
 //sys	CreateWindowEx(exStyle uint32, className *uint16, windowName *uint16, style uint32, x int32, y int32, w int32, h int32, parent windows.Handle, menu windows.Handle, inst windows.Handle, param unsafe.Pointer) (wnd windows.Handle, err error) = user32.CreateWindowExW
 //sys	DefWindowProc(wnd windows.Handle, msg uint32, wParam uintptr, lParam uintptr) (res uintptr) = user32.DefWindowProcW
+//sys	DestroyIcon(icon windows.Handle) (err error) = user32.DestroyIcon
 //sys	DestroyWindow(wnd windows.Handle) (err error) = user32.DestroyWindow
 //sys	DispatchMessage(msg *Msg) (res uintptr) = user32.DispatchMessageW
+//sys	GetDC(wnd windows.Handle) (dc windows.Handle, err error) = user32.GetDC
 //sys	GetMessage(msg *Msg, wnd windows.Handle, msgFilterMin uint32, msgFilterMax uint32) (ret int32, err error) [failretval==-1] = user32.GetMessageW
 //sys	getWindowLong(wnd windows.Handle, i int32) (ptr uintptr, err error) = user32.GetWindowLongW
 //sys	getWindowLongPtr(wnd windows.Handle, i int32) (ptr uintptr, err error) = user32.GetWindowLongPtrW
@@ -152,9 +170,21 @@ type WndClassEx struct {
 //sys	PostQuitMessage(exitCode int32) = user32.PostQuitMessage
 //sys	RegisterClassEx(wcx *WndClassEx) (atom uint16, err error) = user32.RegisterClassExW
 //sys	RegisterWindowMessage(s *uint16) (msg uint32, err error) = user32.RegisterWindowMessageW
+//sys	ReleaseDC(wnd windows.Handle, dc windows.Handle) (err error) = user32.ReleaseDC
 //sys	setWindowLong(wnd windows.Handle, i int32, ptr unsafe.Pointer) (oldptr uintptr, err error) = user32.SetWindowLongW
 //sys	setWindowLongPtr(wnd windows.Handle, i int32, ptr unsafe.Pointer) (oldptr uintptr, err error) = user32.SetWindowLongPtrW
 //sys	TranslateMessage(msg *Msg) (err error) = user32.TranslateMessage
+
+func RGB(r, g, b uint8) uint32 {
+	return uint32(r) | uint32(g)<<8 | uint32(b)<<16
+}
+
+//sys	CreateCompatibleBitmap(dc windows.Handle, w int32, h int32) (bm windows.Handle, err error) = gdi32.CreateCompatibleBitmap
+//sys	CreateCompatibleDC(dc windows.Handle) (mdc windows.Handle, err error) = gdi32.CreateCompatibleDC
+//sys	DeleteDC(dc windows.Handle) (err error) = gdi32.DeleteDC
+//sys	DeleteObject(obj windows.Handle) (err error) = gdi32.DeleteObject
+//sys	SelectObject(dc windows.Handle, obj windows.Handle) (oldobj windows.Handle, err error) = gdi32.SelectObject
+//sys	SetPixel(dc windows.Handle, x int32, y int32, color uint32) (err error) [failretval==^uintptr(0)] = gdi32.SetPixel
 
 type DLLVersionInfo struct {
 	Size         uint32

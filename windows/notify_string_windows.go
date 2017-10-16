@@ -4,9 +4,9 @@ package windows
 
 import "fmt"
 
-const _IconType_name = "IconNoneIconInfoIconWarnIconError"
+const _IconType_name = "IconNoneIconInfoIconWarnIconErrorIconUser"
 
-var _IconType_index = [...]uint8{0, 8, 16, 24, 33}
+var _IconType_index = [...]uint8{0, 8, 16, 24, 33, 41}
 
 func (i IconType) String() string {
 	if i >= IconType(len(_IconType_index)-1) {
