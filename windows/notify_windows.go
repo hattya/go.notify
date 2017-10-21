@@ -24,7 +24,7 @@
 //   SOFTWARE.
 //
 
-//go:generate stringer -type IconType -output notify_string_windows.go
+//go:generate stringer -type BalloonEvent,IconType -output notify_string_windows.go
 
 // Package windows implements the Windows Notifications.
 //
@@ -84,8 +84,9 @@ var (
 
 // NotifyIcon represents a notification icon in the notification area.
 type NotifyIcon struct {
-	Icon *Icon
-	GUID GUID // requires Windows 7 or later
+	Icon    *Icon
+	GUID    GUID              // requires Windows 7 or later
+	Balloon chan BalloonEvent // requires Windows XP or later
 
 	name string
 	wnd  windows.Handle
@@ -95,14 +96,18 @@ type NotifyIcon struct {
 	mu    sync.Mutex
 	data  sys.NotifyIconData
 	added int32
-	done  int32
+	ev    chan BalloonEvent
+	done  chan struct{}
 }
 
 // New returns a new NotifyIcon.
 func New(name string) (ni *NotifyIcon, err error) {
 	ni = &NotifyIcon{
-		name: name,
-		err:  make(chan error, 1),
+		Balloon: make(chan BalloonEvent),
+		name:    name,
+		err:     make(chan error, 1),
+		ev:      make(chan BalloonEvent),
+		done:    make(chan struct{}),
 	}
 	// shell32.dll version
 	switch {
@@ -123,6 +128,9 @@ func New(name string) (ni *NotifyIcon, err error) {
 	default:
 		ni.data.Size = sys.NOTIFYICONDATA_V1_SIZE
 	}
+	// message
+	ni.data.Flags |= sys.NIF_MESSAGE
+	ni.data.CallbackMessage = sys.WM_USER
 	// tooltip
 	ni.data.Flags |= sys.NIF_TIP
 	u, err := windows.UTF16FromString(ni.name)
@@ -131,8 +139,9 @@ func New(name string) (ni *NotifyIcon, err error) {
 	}
 	copy(ni.data.Tip[:], u)
 
-	ni.wg.Add(1)
-	go ni.loop()
+	ni.wg.Add(2)
+	go ni.event()
+	go ni.message()
 	if err = <-ni.err; err != nil {
 		ni = nil
 	}
@@ -143,8 +152,10 @@ func New(name string) (ni *NotifyIcon, err error) {
 func (ni *NotifyIcon) Close() error {
 	ni.mu.Lock()
 	defer ni.mu.Unlock()
-	if atomic.LoadInt32(&ni.done) == 1 {
+	select {
+	case <-ni.done:
 		return nil
+	default:
 	}
 
 	sys.PostMessage(ni.wnd, sys.WM_CLOSE, 0, 0)
@@ -271,7 +282,33 @@ func (ni *NotifyIcon) add(data *sys.NotifyIconData) error {
 	return err
 }
 
-func (ni *NotifyIcon) loop() {
+func (ni *NotifyIcon) event() {
+	defer ni.wg.Done()
+
+	var balloon chan BalloonEvent
+	balloonBuf := make([]BalloonEvent, 1)
+
+	for {
+		select {
+		case ev := <-ni.ev:
+			if balloon == nil {
+				balloon = ni.Balloon
+				balloonBuf = balloonBuf[1:]
+			}
+			balloonBuf = append(balloonBuf, ev)
+		case balloon <- balloonBuf[0]:
+			if len(balloonBuf) == 1 {
+				balloon = nil
+			} else {
+				balloonBuf = balloonBuf[1:]
+			}
+		case <-ni.done:
+			return
+		}
+	}
+}
+
+func (ni *NotifyIcon) message() {
 	defer ni.wg.Done()
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
@@ -308,9 +345,20 @@ func (ni *NotifyIcon) windowProc(wnd windows.Handle, msg uint32, wParam, lParam 
 		if atomic.LoadInt32(&ni.added) != 0 {
 			err = sys.Shell_NotifyIcon(sys.NIM_DELETE, &ni.data)
 		}
-		atomic.StoreInt32(&ni.done, 1)
+		close(ni.done)
 		sys.PostQuitMessage(0)
 		ni.err <- err
+	case sys.WM_USER:
+		switch sys.LoWord(uint32(lParam)) {
+		case sys.NIN_BALLOONSHOW:
+			ni.ev <- BalloonShown
+		case sys.NIN_BALLOONHIDE:
+			ni.ev <- BalloonClosed
+		case sys.NIN_BALLOONTIMEOUT:
+			ni.ev <- BalloonClosed
+		case sys.NIN_BALLOONUSERCLICK:
+			ni.ev <- BalloonClicked
+		}
 	default:
 		if msg == _WM_TASKBARCREATED {
 			atomic.StoreInt32(&ni.added, 0)
@@ -538,6 +586,21 @@ func (g GUID) parse() (guid windows.GUID, err error) {
 Error:
 	return windows.GUID{}, ErrGUID
 }
+
+// BalloonEvent represents an event of the notification balloon.
+type BalloonEvent uint
+
+// List of events for the notification balloon.
+const (
+	// BalloonShown represents the NIN_BALLOONSHOW message.
+	BalloonShown BalloonEvent = iota
+
+	// BalloonClosed represents the NIN_BALLOONHIDE or NIN_BALLOONTIMEOUT message.
+	BalloonClosed
+
+	// BalloonClicked represents the NIN_BALLOONUSERCLICK message.
+	BalloonClicked
+)
 
 // VersionError represents that it requires newer Windows version to perform
 // the specified operation.

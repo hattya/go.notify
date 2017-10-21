@@ -44,6 +44,10 @@ func init() {
 	}
 }
 
+func (ni *NotifyIcon) PostMessage(msg uint32, wParam, lParam uintptr) error {
+	return sys.PostMessage(ni.wnd, msg, wParam, lParam)
+}
+
 func (g GUID) Parse() (windows.GUID, error) {
 	return g.parse()
 }

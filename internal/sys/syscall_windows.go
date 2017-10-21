@@ -92,6 +92,10 @@ func IsWindowsVersionOrGreater(major, minor uint32, sp uint16) bool {
 	return VerifyVersionInfo(&vi, VER_MAJORVERSION|VER_MINORVERSION|VER_SERVICEPACKMAJOR, VerSetConditionMask(VerSetConditionMask(VerSetConditionMask(0, VER_MAJORVERSION, VER_GREATER_EQUAL), VER_MINORVERSION, VER_GREATER_EQUAL), VER_SERVICEPACKMAJOR, VER_GREATER_EQUAL))
 }
 
+func LoWord(v uint32) uint16 {
+	return uint16(v & 0xffff)
+}
+
 //sys	GetModuleHandle(name *uint16) (h windows.Handle, err error) = GetModuleHandleW
 //sys	VerifyVersionInfo(vi *OSVersionInfoEx, typeMask uint32, conditionMask uint64) (ok bool) = VerifyVersionInfoW
 //sys	VerSetConditionMask(lConditionMask uint64, typeBitMask uint32, conditionMask uint8) (mask uint64)
@@ -115,6 +119,7 @@ const (
 	WM_CLOSE   = 0x0010
 	WM_CREATE  = 0x0001
 	WM_DESTROY = 0x0002
+	WM_USER    = 0x0400
 )
 
 const WS_POPUP = 0x80000000
@@ -274,6 +279,13 @@ const (
 	NIF_GUID
 	NIF_REALTIME
 	NIF_SHOWTIP
+)
+
+const (
+	NIN_BALLOONSHOW = WM_USER + (iota + 2)
+	NIN_BALLOONHIDE
+	NIN_BALLOONTIMEOUT
+	NIN_BALLOONUSERCLICK
 )
 
 const (

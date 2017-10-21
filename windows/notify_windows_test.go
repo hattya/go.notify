@@ -34,7 +34,9 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/hattya/go.notify/internal/sys"
 	"github.com/hattya/go.notify/windows"
 	syscall "golang.org/x/sys/windows"
 )
@@ -288,6 +290,49 @@ func TestGUIDError(t *testing.T) {
 	} {
 		if _, err := windows.GUID(s).Parse(); err == nil {
 			t.Error("expected error")
+		}
+	}
+}
+
+func TestBalloonEvent(t *testing.T) {
+	ni, err := windows.New(name)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer ni.Close()
+
+	for _, nin := range []uintptr{
+		sys.NIN_BALLOONSHOW,
+		sys.NIN_BALLOONHIDE,
+		sys.NIN_BALLOONTIMEOUT,
+		sys.NIN_BALLOONUSERCLICK,
+	} {
+		if err := ni.PostMessage(sys.WM_USER, 0, nin); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	time.Sleep(1 * time.Second)
+
+	for _, e := range []windows.BalloonEvent{
+		windows.BalloonShown,
+		windows.BalloonClosed,
+		windows.BalloonClosed,
+		windows.BalloonClicked,
+	} {
+		if g := <-ni.Balloon; !reflect.DeepEqual(g, e) {
+			t.Errorf("expected %v, got %v", e, g)
+		}
+	}
+
+	for i, e := range []string{
+		"BalloonShown",
+		"BalloonClosed",
+		"BalloonClicked",
+		"BalloonEvent(3)",
+	} {
+		if g := windows.BalloonEvent(i).String(); g != e {
+			t.Errorf("BalloonEvent.String() = %v, expected %v", g, e)
 		}
 	}
 }
