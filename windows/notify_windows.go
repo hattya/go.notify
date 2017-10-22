@@ -87,16 +87,18 @@ type NotifyIcon struct {
 	Icon    *Icon
 	GUID    GUID              // requires Windows 7 or later
 	Balloon chan BalloonEvent // requires Windows XP or later
+	Menu    chan MenuEvent
 
 	name string
 	wnd  windows.Handle
+	menu *Menu
 	wg   sync.WaitGroup
 	err  chan error
 
 	mu    sync.Mutex
 	data  sys.NotifyIconData
 	added int32
-	ev    chan BalloonEvent
+	ev    chan interface{}
 	done  chan struct{}
 }
 
@@ -104,9 +106,10 @@ type NotifyIcon struct {
 func New(name string) (ni *NotifyIcon, err error) {
 	ni = &NotifyIcon{
 		Balloon: make(chan BalloonEvent),
+		Menu:    make(chan MenuEvent),
 		name:    name,
 		err:     make(chan error, 1),
-		ev:      make(chan BalloonEvent),
+		ev:      make(chan interface{}),
 		done:    make(chan struct{}),
 	}
 	// shell32.dll version
@@ -282,25 +285,48 @@ func (ni *NotifyIcon) add(data *sys.NotifyIconData) error {
 	return err
 }
 
+// CreateMenu creates a new context menu.
+func (ni *NotifyIcon) CreateMenu() *Menu {
+	ni.menu = new(Menu)
+	return ni.menu
+}
+
 func (ni *NotifyIcon) event() {
 	defer ni.wg.Done()
 
 	var balloon chan BalloonEvent
+	var menu chan MenuEvent
 	balloonBuf := make([]BalloonEvent, 1)
+	menuBuf := make([]MenuEvent, 1)
 
 	for {
 		select {
 		case ev := <-ni.ev:
-			if balloon == nil {
-				balloon = ni.Balloon
-				balloonBuf = balloonBuf[1:]
+			switch ev := ev.(type) {
+			case BalloonEvent:
+				if balloon == nil {
+					balloon = ni.Balloon
+					balloonBuf = balloonBuf[1:]
+				}
+				balloonBuf = append(balloonBuf, ev)
+			case MenuEvent:
+				if menu == nil {
+					menu = ni.Menu
+					menuBuf = menuBuf[1:]
+				}
+				menuBuf = append(menuBuf, ev)
 			}
-			balloonBuf = append(balloonBuf, ev)
 		case balloon <- balloonBuf[0]:
 			if len(balloonBuf) == 1 {
 				balloon = nil
 			} else {
 				balloonBuf = balloonBuf[1:]
+			}
+		case menu <- menuBuf[0]:
+			if len(menuBuf) == 1 {
+				menu = nil
+			} else {
+				menuBuf = menuBuf[1:]
 			}
 		case <-ni.done:
 			return
@@ -350,6 +376,8 @@ func (ni *NotifyIcon) windowProc(wnd windows.Handle, msg uint32, wParam, lParam 
 		ni.err <- err
 	case sys.WM_USER:
 		switch sys.LoWord(uint32(lParam)) {
+		case sys.WM_RBUTTONUP:
+			sys.PostMessage(wnd, sys.WM_CONTEXTMENU, 0, 0)
 		case sys.NIN_BALLOONSHOW:
 			ni.ev <- BalloonShown
 		case sys.NIN_BALLOONHIDE:
@@ -359,6 +387,21 @@ func (ni *NotifyIcon) windowProc(wnd windows.Handle, msg uint32, wParam, lParam 
 		case sys.NIN_BALLOONUSERCLICK:
 			ni.ev <- BalloonClicked
 		}
+	case sys.WM_CONTEXTMENU:
+		var pt sys.Point
+		sys.GetCursorPos(&pt)
+		sys.SetForegroundWindow(wnd)
+		menu, err := ni.menu.sys()
+		if err != nil {
+			panic(err)
+		}
+		sys.TrackPopupMenu(menu, sys.TPM_RIGHTALIGN, pt.X, pt.Y, 0, wnd)
+		sys.DestroyMenu(menu)
+		sys.PostMessage(wnd, sys.WM_NULL, 0, 0)
+	case sys.WM_COMMAND:
+		ni.ev <- MenuEvent{ID: sys.LoWord(uint32(wParam))}
+	case sys.WM_SYSKEYDOWN:
+		// disable Alt+F4
 	default:
 		if msg == _WM_TASKBARCREATED {
 			atomic.StoreInt32(&ni.added, 0)
@@ -601,6 +644,80 @@ const (
 	// BalloonClicked represents the NIN_BALLOONUSERCLICK message.
 	BalloonClicked
 )
+
+// Menu represents a context menu of the NotifyIcon.
+type Menu struct {
+	items []menuItem
+}
+
+// Item appends an item to the context menu.
+func (m *Menu) Item(text string, id uint) {
+	m.items = append(m.items, menuItem{
+		text:  text,
+		id:    id,
+		flags: sys.MF_STRING,
+	})
+}
+
+// Submenu appends a submenu to the context menu.
+func (m *Menu) Submenu(text string) *Menu {
+	menu := new(Menu)
+	m.items = append(m.items, menuItem{
+		text:  text,
+		flags: sys.MF_POPUP,
+		menu:  menu,
+	})
+	return menu
+}
+
+// Sep appends a separator to the context menu.
+func (m *Menu) Sep() {
+	m.items = append(m.items, menuItem{
+		flags: sys.MF_SEPARATOR,
+	})
+}
+
+func (m *Menu) sys() (windows.Handle, error) {
+	menu, err := sys.CreatePopupMenu()
+	if err != nil {
+		return 0, err
+	}
+	for _, mi := range m.items {
+		var item uintptr
+		if mi.menu != nil {
+			sub, err := mi.menu.sys()
+			if err != nil {
+				sys.DestroyMenu(menu)
+				return 0, err
+			}
+			item = uintptr(sub)
+		} else {
+			item = uintptr(mi.id)
+		}
+		p, err := windows.UTF16PtrFromString(mi.text)
+		if err != nil {
+			sys.DestroyMenu(menu)
+			return 0, err
+		}
+		if err := sys.AppendMenu(menu, mi.flags, item, p); err != nil {
+			sys.DestroyMenu(menu)
+			return 0, err
+		}
+	}
+	return menu, nil
+}
+
+type menuItem struct {
+	text  string
+	id    uint
+	flags uint32
+	menu  *Menu
+}
+
+// MenuEvent represents an event of the context menu.
+type MenuEvent struct {
+	ID uint16
+}
 
 // VersionError represents that it requires newer Windows version to perform
 // the specified operation.

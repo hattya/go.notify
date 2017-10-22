@@ -45,12 +45,16 @@ var (
 	procGetModuleHandleW       = modkernel32.NewProc("GetModuleHandleW")
 	procVerifyVersionInfoW     = modkernel32.NewProc("VerifyVersionInfoW")
 	procVerSetConditionMask    = modkernel32.NewProc("VerSetConditionMask")
+	procAppendMenuW            = moduser32.NewProc("AppendMenuW")
 	procCreateIconIndirect     = moduser32.NewProc("CreateIconIndirect")
+	procCreatePopupMenu        = moduser32.NewProc("CreatePopupMenu")
 	procCreateWindowExW        = moduser32.NewProc("CreateWindowExW")
 	procDefWindowProcW         = moduser32.NewProc("DefWindowProcW")
 	procDestroyIcon            = moduser32.NewProc("DestroyIcon")
+	procDestroyMenu            = moduser32.NewProc("DestroyMenu")
 	procDestroyWindow          = moduser32.NewProc("DestroyWindow")
 	procDispatchMessageW       = moduser32.NewProc("DispatchMessageW")
+	procGetCursorPos           = moduser32.NewProc("GetCursorPos")
 	procGetDC                  = moduser32.NewProc("GetDC")
 	procGetMessageW            = moduser32.NewProc("GetMessageW")
 	procGetWindowLongW         = moduser32.NewProc("GetWindowLongW")
@@ -61,8 +65,10 @@ var (
 	procRegisterClassExW       = moduser32.NewProc("RegisterClassExW")
 	procRegisterWindowMessageW = moduser32.NewProc("RegisterWindowMessageW")
 	procReleaseDC              = moduser32.NewProc("ReleaseDC")
+	procSetForegroundWindow    = moduser32.NewProc("SetForegroundWindow")
 	procSetWindowLongW         = moduser32.NewProc("SetWindowLongW")
 	procSetWindowLongPtrW      = moduser32.NewProc("SetWindowLongPtrW")
+	procTrackPopupMenu         = moduser32.NewProc("TrackPopupMenu")
 	procTranslateMessage       = moduser32.NewProc("TranslateMessage")
 	procCreateCompatibleBitmap = modgdi32.NewProc("CreateCompatibleBitmap")
 	procCreateCompatibleDC     = modgdi32.NewProc("CreateCompatibleDC")
@@ -98,10 +104,35 @@ func VerSetConditionMask(lConditionMask uint64, typeBitMask uint32, conditionMas
 	return
 }
 
+func AppendMenu(menu windows.Handle, flags uint32, id uintptr, item *uint16) (err error) {
+	r1, _, e1 := syscall.Syscall6(procAppendMenuW.Addr(), 4, uintptr(menu), uintptr(flags), uintptr(id), uintptr(unsafe.Pointer(item)), 0, 0)
+	if r1 == 0 {
+		if e1 != 0 {
+			err = errnoErr(e1)
+		} else {
+			err = syscall.EINVAL
+		}
+	}
+	return
+}
+
 func CreateIconIndirect(ii *IconInfo) (icon windows.Handle, err error) {
 	r0, _, e1 := syscall.Syscall(procCreateIconIndirect.Addr(), 1, uintptr(unsafe.Pointer(ii)), 0, 0)
 	icon = windows.Handle(r0)
 	if icon == 0 {
+		if e1 != 0 {
+			err = errnoErr(e1)
+		} else {
+			err = syscall.EINVAL
+		}
+	}
+	return
+}
+
+func CreatePopupMenu() (menu windows.Handle, err error) {
+	r0, _, e1 := syscall.Syscall(procCreatePopupMenu.Addr(), 0, 0, 0, 0)
+	menu = windows.Handle(r0)
+	if menu == 0 {
 		if e1 != 0 {
 			err = errnoErr(e1)
 		} else {
@@ -142,6 +173,18 @@ func DestroyIcon(icon windows.Handle) (err error) {
 	return
 }
 
+func DestroyMenu(menu windows.Handle) (err error) {
+	r1, _, e1 := syscall.Syscall(procDestroyMenu.Addr(), 1, uintptr(menu), 0, 0)
+	if r1 == 0 {
+		if e1 != 0 {
+			err = errnoErr(e1)
+		} else {
+			err = syscall.EINVAL
+		}
+	}
+	return
+}
+
 func DestroyWindow(wnd windows.Handle) (err error) {
 	r1, _, e1 := syscall.Syscall(procDestroyWindow.Addr(), 1, uintptr(wnd), 0, 0)
 	if r1 == 0 {
@@ -157,6 +200,18 @@ func DestroyWindow(wnd windows.Handle) (err error) {
 func DispatchMessage(msg *Msg) (res uintptr) {
 	r0, _, _ := syscall.Syscall(procDispatchMessageW.Addr(), 1, uintptr(unsafe.Pointer(msg)), 0, 0)
 	res = uintptr(r0)
+	return
+}
+
+func GetCursorPos(pt *Point) (err error) {
+	r1, _, e1 := syscall.Syscall(procGetCursorPos.Addr(), 1, uintptr(unsafe.Pointer(pt)), 0, 0)
+	if r1 == 0 {
+		if e1 != 0 {
+			err = errnoErr(e1)
+		} else {
+			err = syscall.EINVAL
+		}
+	}
 	return
 }
 
@@ -280,6 +335,18 @@ func ReleaseDC(wnd windows.Handle, dc windows.Handle) (err error) {
 	return
 }
 
+func SetForegroundWindow(wnd windows.Handle) (err error) {
+	r1, _, e1 := syscall.Syscall(procSetForegroundWindow.Addr(), 1, uintptr(wnd), 0, 0)
+	if r1 == 0 {
+		if e1 != 0 {
+			err = errnoErr(e1)
+		} else {
+			err = syscall.EINVAL
+		}
+	}
+	return
+}
+
 func setWindowLong(wnd windows.Handle, i int32, ptr unsafe.Pointer) (oldptr uintptr, err error) {
 	r0, _, e1 := syscall.Syscall(procSetWindowLongW.Addr(), 3, uintptr(wnd), uintptr(i), uintptr(ptr))
 	oldptr = uintptr(r0)
@@ -297,6 +364,19 @@ func setWindowLongPtr(wnd windows.Handle, i int32, ptr unsafe.Pointer) (oldptr u
 	r0, _, e1 := syscall.Syscall(procSetWindowLongPtrW.Addr(), 3, uintptr(wnd), uintptr(i), uintptr(ptr))
 	oldptr = uintptr(r0)
 	if oldptr == 0 {
+		if e1 != 0 {
+			err = errnoErr(e1)
+		} else {
+			err = syscall.EINVAL
+		}
+	}
+	return
+}
+
+func TrackPopupMenu(menu windows.Handle, flags uint32, x int32, y int32, reserved int32, wnd windows.Handle) (ret int32, err error) {
+	r0, _, e1 := syscall.Syscall6(procTrackPopupMenu.Addr(), 6, uintptr(menu), uintptr(flags), uintptr(x), uintptr(y), uintptr(reserved), uintptr(wnd))
+	ret = int32(r0)
+	if ret == 0 {
 		if e1 != 0 {
 			err = errnoErr(e1)
 		} else {

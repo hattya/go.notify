@@ -337,6 +337,38 @@ func TestBalloonEvent(t *testing.T) {
 	}
 }
 
+func TestMenu(t *testing.T) {
+	ni, err := windows.New(name)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer ni.Close()
+
+	menu := ni.CreateMenu()
+	sub := menu.Submenu("Submenu")
+	sub.Item("Item 1", 1)
+	sub.Sep()
+	sub.Item("Item 2", 2)
+	menu.Sep()
+	menu.Item("Item 3", 3)
+	for i := 1; i < 4; i++ {
+		if err := ni.PostMessage(sys.WM_USER, 0, sys.WM_RBUTTONUP); err != nil {
+			t.Fatal(err)
+		}
+		if err := ni.PostMessage(sys.WM_COMMAND, uintptr(i), 0); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	time.Sleep(1 * time.Second)
+
+	for i := uint16(1); i < 4; i++ {
+		if g, e := <-ni.Menu, (windows.MenuEvent{ID: i}); !reflect.DeepEqual(g, e) {
+			t.Errorf("expected %#v, got %#v", e, g)
+		}
+	}
+}
+
 func TestVersionError(t *testing.T) {
 	for _, s := range []string{
 		"XP SP2",

@@ -116,10 +116,23 @@ const (
 const OIC_SAMPLE = 32512
 
 const (
-	WM_CLOSE   = 0x0010
-	WM_CREATE  = 0x0001
-	WM_DESTROY = 0x0002
-	WM_USER    = 0x0400
+	MF_STRING    = 0x00000000
+	MF_POPUP     = 0x00000010
+	MF_SEPARATOR = 0x00000800
+)
+
+const TPM_RIGHTALIGN = 0x0008
+
+const (
+	WM_CLOSE       = 0x0010
+	WM_COMMAND     = 0x0111
+	WM_CONTEXTMENU = 0x007b
+	WM_CREATE      = 0x0001
+	WM_DESTROY     = 0x0002
+	WM_NULL        = 0x0000
+	WM_RBUTTONUP   = 0x0205
+	WM_SYSKEYDOWN  = 0x0104
+	WM_USER        = 0x0400
 )
 
 const WS_POPUP = 0x80000000
@@ -179,12 +192,16 @@ func MakeIntResource(i uint16) *uint16 {
 	return (*uint16)(unsafe.Pointer(uintptr(i)))
 }
 
+//sys	AppendMenu(menu windows.Handle, flags uint32, id uintptr, item *uint16) (err error) = user32.AppendMenuW
 //sys	CreateIconIndirect(ii *IconInfo) (icon windows.Handle, err error) = user32.
+//sys	CreatePopupMenu() (menu windows.Handle, err error) = user32.CreatePopupMenu
 //sys	CreateWindowEx(exStyle uint32, className *uint16, windowName *uint16, style uint32, x int32, y int32, w int32, h int32, parent windows.Handle, menu windows.Handle, inst windows.Handle, param unsafe.Pointer) (wnd windows.Handle, err error) = user32.CreateWindowExW
 //sys	DefWindowProc(wnd windows.Handle, msg uint32, wParam uintptr, lParam uintptr) (res uintptr) = user32.DefWindowProcW
 //sys	DestroyIcon(icon windows.Handle) (err error) = user32.DestroyIcon
+//sys	DestroyMenu(menu windows.Handle) (err error) = user32.DestroyMenu
 //sys	DestroyWindow(wnd windows.Handle) (err error) = user32.DestroyWindow
 //sys	DispatchMessage(msg *Msg) (res uintptr) = user32.DispatchMessageW
+//sys	GetCursorPos(pt *Point) (err error) = user32.GetCursorPos
 //sys	GetDC(wnd windows.Handle) (dc windows.Handle, err error) = user32.GetDC
 //sys	GetMessage(msg *Msg, wnd windows.Handle, msgFilterMin uint32, msgFilterMax uint32) (ret int32, err error) [failretval==-1] = user32.GetMessageW
 //sys	getWindowLong(wnd windows.Handle, i int32) (ptr uintptr, err error) = user32.GetWindowLongW
@@ -195,8 +212,10 @@ func MakeIntResource(i uint16) *uint16 {
 //sys	RegisterClassEx(wcx *WndClassEx) (atom uint16, err error) = user32.RegisterClassExW
 //sys	RegisterWindowMessage(s *uint16) (msg uint32, err error) = user32.RegisterWindowMessageW
 //sys	ReleaseDC(wnd windows.Handle, dc windows.Handle) (err error) = user32.ReleaseDC
+//sys	SetForegroundWindow(wnd windows.Handle) (err error) = user32.SetForegroundWindow
 //sys	setWindowLong(wnd windows.Handle, i int32, ptr unsafe.Pointer) (oldptr uintptr, err error) = user32.SetWindowLongW
 //sys	setWindowLongPtr(wnd windows.Handle, i int32, ptr unsafe.Pointer) (oldptr uintptr, err error) = user32.SetWindowLongPtrW
+//sys	TrackPopupMenu(menu windows.Handle, flags uint32, x int32, y int32, reserved int32, wnd windows.Handle) (ret int32, err error) = user32.TrackPopupMenu
 //sys	TranslateMessage(msg *Msg) (err error) = user32.TranslateMessage
 
 func RGB(r, g, b uint8) uint32 {
