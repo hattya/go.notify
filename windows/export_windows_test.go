@@ -31,7 +31,21 @@ import (
 	"golang.org/x/sys/windows"
 )
 
+var shellDLLVersion [][]uint32
+
+func MockShellDLLVersion(major, minor, build uint32) {
+	shellDLLVersion = append(shellDLLVersion, []uint32{major, minor, build})
+}
+
 func init() {
+	isShellDLLVersionOrGreater = func(major, minor, build uint32) bool {
+		if len(shellDLLVersion) == 0 {
+			return sys.IsShellDLLVersionOrGreater(major, minor, build)
+		}
+		v := shellDLLVersion[0]
+		shellDLLVersion = shellDLLVersion[1:]
+		return v[0]<<16|v[1]<<8|v[2] >= major<<16|minor<<8|build
+	}
 	loadImage = func(windows.Handle, *uint16, uint32, int32, int32, uint32) (windows.Handle, error) {
 		return sys.LoadImage(0, sys.MakeIntResource(32512), sys.IMAGE_ICON, 0, 0, sys.LR_DEFAULTSIZE|sys.LR_SHARED)
 	}

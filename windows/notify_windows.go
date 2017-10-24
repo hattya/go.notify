@@ -78,8 +78,9 @@ func init() {
 
 // for testing
 var (
-	loadImage       = sys.LoadImage
-	testHookPrepare func(*NotifyIcon)
+	isShellDLLVersionOrGreater = sys.IsShellDLLVersionOrGreater
+	loadImage                  = sys.LoadImage
+	testHookPrepare            func(*NotifyIcon)
 )
 
 // NotifyIcon represents a notification icon in the notification area.

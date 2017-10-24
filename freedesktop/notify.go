@@ -282,6 +282,7 @@ func (n *Notification) Hint(name string, value interface{}) error {
 	if n.Hints == nil {
 		n.Hints = make(map[string]interface{})
 	}
+	var err error
 	switch name {
 	case "image-data", "image_data", "icon_data":
 		name = "image-data"
@@ -290,7 +291,6 @@ func (n *Notification) Hint(name string, value interface{}) error {
 		case ImageData:
 			value = &v
 		case image.Image:
-			var err error
 			if value, err = NewImageData(v); err != nil {
 				return err
 			}
@@ -298,94 +298,104 @@ func (n *Notification) Hint(name string, value interface{}) error {
 	case "image-path", "image_path":
 		name = "image-path"
 	case "x", "y":
-		int2i := func(i int64) (int32, bool) {
-			if math.MinInt32 <= i && i <= math.MaxInt32 {
-				return int32(i), true
-			}
-			return 0, false
+		if value, err = v2i(name, value); err != nil {
+			return err
 		}
-		uint2i := func(u uint64) (int32, bool) {
-			if u <= math.MaxInt32 {
-				return int32(u), true
-			}
-			return 0, false
-		}
-		var i int32
-		var ok bool
-		switch v := value.(type) {
-		case int:
-			i, ok = int2i(int64(v))
-		case int8:
-			i, ok = int2i(int64(v))
-		case int16:
-			i, ok = int2i(int64(v))
-		case int32:
-			i, ok = v, true
-		case int64:
-			i, ok = int2i(v)
-		case uint:
-			i, ok = uint2i(uint64(v))
-		case uint8:
-			i, ok = uint2i(uint64(v))
-		case uint16:
-			i, ok = uint2i(uint64(v))
-		case uint32:
-			i, ok = uint2i(uint64(v))
-		case uint64:
-			i, ok = uint2i(v)
-		default:
-			return fmt.Errorf("%q is not int32: %T", name, value)
-		}
-		if !ok {
-			return fmt.Errorf("%q overflows int32 range: %v", name, value)
-		}
-		value = i
 	case "urgency":
-		int2y := func(i int64) (uint8, bool) {
-			if 0 <= i && i <= math.MaxUint8 {
-				return uint8(i), true
-			}
-			return 0, false
+		if value, err = v2y(name, value); err != nil {
+			return err
 		}
-		uint2y := func(u uint64) (uint8, bool) {
-			if u <= math.MaxUint8 {
-				return uint8(u), true
-			}
-			return 0, false
-		}
-		var y uint8
-		var ok bool
-		switch v := value.(type) {
-		case int:
-			y, ok = int2y(int64(v))
-		case int8:
-			y, ok = int2y(int64(v))
-		case int16:
-			y, ok = int2y(int64(v))
-		case int32:
-			y, ok = int2y(int64(v))
-		case int64:
-			y, ok = int2y(v)
-		case uint:
-			y, ok = uint2y(uint64(v))
-		case uint8:
-			y, ok = v, true
-		case uint16:
-			y, ok = uint2y(uint64(v))
-		case uint32:
-			y, ok = uint2y(uint64(v))
-		case uint64:
-			y, ok = uint2y(v)
-		default:
-			return fmt.Errorf("%q is not byte: %T", name, value)
-		}
-		if !ok {
-			return fmt.Errorf("%q overflows byte range: %v", name, value)
-		}
-		value = y
 	}
 	n.Hints[name] = value
 	return nil
+}
+
+func v2i(name string, value interface{}) (i int32, err error) {
+	int2i := func(i int64) (int32, bool) {
+		if math.MinInt32 <= i && i <= math.MaxInt32 {
+			return int32(i), true
+		}
+		return 0, false
+	}
+	uint2i := func(u uint64) (int32, bool) {
+		if u <= math.MaxInt32 {
+			return int32(u), true
+		}
+		return 0, false
+	}
+	var ok bool
+	switch v := value.(type) {
+	case int:
+		i, ok = int2i(int64(v))
+	case int8:
+		i, ok = int2i(int64(v))
+	case int16:
+		i, ok = int2i(int64(v))
+	case int32:
+		i, ok = v, true
+	case int64:
+		i, ok = int2i(v)
+	case uint:
+		i, ok = uint2i(uint64(v))
+	case uint8:
+		i, ok = uint2i(uint64(v))
+	case uint16:
+		i, ok = uint2i(uint64(v))
+	case uint32:
+		i, ok = uint2i(uint64(v))
+	case uint64:
+		i, ok = uint2i(v)
+	default:
+		return 0, fmt.Errorf("%q is not int32: %T", name, value)
+	}
+	if !ok {
+		return 0, fmt.Errorf("%q overflows int32 range: %v", name, value)
+	}
+	return
+}
+
+func v2y(name string, value interface{}) (y uint8, err error) {
+	int2y := func(i int64) (uint8, bool) {
+		if 0 <= i && i <= math.MaxUint8 {
+			return uint8(i), true
+		}
+		return 0, false
+	}
+	uint2y := func(u uint64) (uint8, bool) {
+		if u <= math.MaxUint8 {
+			return uint8(u), true
+		}
+		return 0, false
+	}
+	var ok bool
+	switch v := value.(type) {
+	case int:
+		y, ok = int2y(int64(v))
+	case int8:
+		y, ok = int2y(int64(v))
+	case int16:
+		y, ok = int2y(int64(v))
+	case int32:
+		y, ok = int2y(int64(v))
+	case int64:
+		y, ok = int2y(v)
+	case uint:
+		y, ok = uint2y(uint64(v))
+	case uint8:
+		y, ok = v, true
+	case uint16:
+		y, ok = uint2y(uint64(v))
+	case uint32:
+		y, ok = uint2y(uint64(v))
+	case uint64:
+		y, ok = uint2y(v)
+	default:
+		return 0, fmt.Errorf("%q is not byte: %T", name, value)
+	}
+	if !ok {
+		return 0, fmt.Errorf("%q overflows byte range: %v", name, value)
+	}
+	return
 }
 
 // ImageData represents a raw image data structure of signature (iiibiiay).
