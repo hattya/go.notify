@@ -35,6 +35,7 @@ import (
 	"strings"
 	"testing"
 	"time"
+	"unsafe"
 
 	"github.com/hattya/go.notify/internal/sys"
 	"github.com/hattya/go.notify/windows"
@@ -45,6 +46,89 @@ const (
 	name = "go.notify"
 	guid = "{23977B55-10E0-4041-B862-B19541963669}"
 )
+
+func TestNew_Windows7(t *testing.T) {
+	windows.MockShellDLLVersion(6, 0, 6)
+	windows.MockWindows7()
+	ni, err := windows.New(name)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer ni.Close()
+
+	data := ni.Data()
+	if g, e := data.Size, uint32(unsafe.Sizeof(sys.NotifyIconData{})); g != e {
+		t.Errorf("NotifyIconData.Size = %v, expected %v", g, e)
+	}
+	if data.InfoFlags&sys.NIIF_RESPECT_QUIET_TIME == 0 {
+		t.Error("NIIF_RESPECT_QUIET_TIME is not set")
+	}
+}
+
+func TestNew_WindowsVista(t *testing.T) {
+	windows.MockShellDLLVersion(6, 0, 6)
+	windows.MockWindowsVista()
+	ni, err := windows.New(name)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer ni.Close()
+
+	data := ni.Data()
+	if g, e := data.Size, uint32(unsafe.Sizeof(sys.NotifyIconData{})); g != e {
+		t.Errorf("NotifyIconData.Size = %v, expected %v", g, e)
+	}
+	if data.InfoFlags&sys.NIIF_RESPECT_QUIET_TIME != 0 {
+		t.Error("NIIF_RESPECT_QUIET_TIME is set")
+	}
+}
+
+func TestNew_WindowsXP(t *testing.T) {
+	windows.MockShellDLLVersion(6, 0, 0)
+	windows.MockShellDLLVersion(6, 0, 0)
+	ni, err := windows.New(name)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer ni.Close()
+
+	data := ni.Data()
+	if g, e := data.Size, sys.NOTIFYICONDATA_V3_SIZE; g != e {
+		t.Errorf("NotifyIconData.Size = %v, expected %v", g, e)
+	}
+}
+
+func TestNew_Windows2000(t *testing.T) {
+	windows.MockShellDLLVersion(5, 0, 0)
+	windows.MockShellDLLVersion(5, 0, 0)
+	windows.MockShellDLLVersion(5, 0, 0)
+	ni, err := windows.New(name)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer ni.Close()
+
+	data := ni.Data()
+	if g, e := data.Size, sys.NOTIFYICONDATA_V2_SIZE; g != e {
+		t.Errorf("NotifyIconData.Size = %v, expected %v", g, e)
+	}
+}
+
+func TestNew_Windows98(t *testing.T) {
+	windows.MockShellDLLVersion(4, 72, 0)
+	windows.MockShellDLLVersion(4, 72, 0)
+	windows.MockShellDLLVersion(4, 72, 0)
+	ni, err := windows.New(name)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer ni.Close()
+
+	data := ni.Data()
+	if g, e := data.Size, sys.NOTIFYICONDATA_V1_SIZE; g != e {
+		t.Errorf("NotifyIconData.Size = %v, expected %v", g, e)
+	}
+}
 
 func TestNewError(t *testing.T) {
 	if _, err := windows.New("\000"); err == nil {
@@ -65,6 +149,53 @@ func TestClose(t *testing.T) {
 	}
 }
 
+func TestPrepare(t *testing.T) {
+	ni, err := windows.New(name)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer ni.Close()
+
+	icon, err := load()
+	if err != nil {
+		t.Error(err)
+	}
+	defer icon.Close()
+
+	ni.Icon = icon
+	if err := ni.Prepare(sys.NotifyIconData{}); err != nil {
+		t.Fatal(err)
+	}
+	if data := ni.Data(); data.Flags&sys.NIF_ICON == 0 {
+		t.Error("NIF_ICON is not set")
+	}
+
+	ni.Icon = nil
+	if err := ni.Prepare(ni.Data()); err != nil {
+		t.Fatal(err)
+	}
+	if data := ni.Data(); data.Flags&sys.NIF_ICON != 0 {
+		t.Error("NIF_ICON is set")
+	}
+
+	windows.MockWindows7()
+	ni.GUID = guid
+	if err := ni.Prepare(sys.NotifyIconData{}); err != nil {
+		t.Fatal(err)
+	}
+
+	windows.MockWindowsVista()
+	ni.GUID = guid
+	if err := ni.Prepare(sys.NotifyIconData{}); err == nil {
+		t.Fatal("expected error")
+	}
+
+	ni.GUID = ""
+	if err := ni.Prepare(sys.NotifyIconData{Flags: sys.NIF_GUID}); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestAdd(t *testing.T) {
 	ni, err := windows.New(name)
 	if err != nil {
@@ -79,7 +210,6 @@ func TestAdd(t *testing.T) {
 	defer icon.Close()
 
 	ni.Icon = icon
-	ni.GUID = guid
 	if err := ni.Add(); err != nil {
 		t.Error(err)
 	}
@@ -88,6 +218,7 @@ func TestAdd(t *testing.T) {
 		t.Error("expected error")
 	}
 	// invalid GUID
+	windows.MockWindows7()
 	ni.GUID = "{XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX}"
 	if err := ni.Add(); err == nil {
 		t.Error("expected error")
@@ -112,7 +243,6 @@ func TestModify(t *testing.T) {
 	defer icon.Close()
 
 	ni.Icon = icon
-	ni.GUID = guid
 	if err := ni.Add(); err != nil {
 		t.Fatal(err)
 	}
@@ -120,6 +250,7 @@ func TestModify(t *testing.T) {
 		t.Error(err)
 	}
 	// invalid GUID
+	windows.MockWindows7()
 	ni.GUID = "{XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX}"
 	if err := ni.Modify(); err == nil {
 		t.Error("expected error")
@@ -140,7 +271,6 @@ func TestNotify(t *testing.T) {
 	defer icon.Close()
 
 	ni.Icon = icon
-	ni.GUID = guid
 	for _, v := range []windows.IconType{
 		windows.IconNone,
 		windows.IconInfo,
@@ -166,8 +296,38 @@ func TestNotify(t *testing.T) {
 	if err := ni.Notify(n); err != nil {
 		t.Error(err)
 	}
-	// unknown IconType
-	v := windows.IconType(9)
+}
+
+func TestNotifyError(t *testing.T) {
+	ni, err := windows.New(name)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer ni.Close()
+
+	icon, err := load()
+	if err != nil {
+		t.Error(err)
+	}
+	defer icon.Close()
+	// invalid string
+	n := &windows.Notification{
+		Title: "\000",
+		Body:  "Body",
+	}
+	if err := ni.Notify(n); err == nil {
+		t.Error("expected error")
+	}
+	n = &windows.Notification{
+		Title: "Title",
+		Body:  "\000",
+	}
+	if err := ni.Notify(n); err == nil {
+		t.Error("expected error")
+	}
+	// NIIF_USER on Windows 2000
+	windows.MockWindows2000()
+	v := windows.IconUser
 	n = &windows.Notification{
 		Title:    "Title",
 		Body:     v.String(),
@@ -176,7 +336,39 @@ func TestNotify(t *testing.T) {
 	if err := ni.Notify(n); err == nil {
 		t.Error("expected error")
 	}
+	// NIIF_USER on Windows XP
+	windows.MockShellDLLVersion(6, 0, 0)
+	v = windows.IconUser
+	n = &windows.Notification{
+		Title:    "Title",
+		Body:     v.String(),
+		IconType: v,
+		Icon:     icon,
+	}
+	if err := ni.Notify(n); err == nil {
+		t.Error("expected error")
+	}
+	// unknown IconType
+	v = windows.IconType(9)
+	n = &windows.Notification{
+		Title:    "Title",
+		Body:     v.String(),
+		IconType: v,
+	}
+	if err := ni.Notify(n); err == nil {
+		t.Error("expected error")
+	}
+	// NIIF_NOSOUND on Windows 2000
+	windows.MockShellDLLVersion(5, 0, 0)
+	n = &windows.Notification{
+		Title: "Title",
+		Body:  "No Sound",
+	}
+	if err := ni.Notify(n); err == nil {
+		t.Error("expected error")
+	}
 	// invalid GUID
+	windows.MockWindows7()
 	ni.GUID = "{XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX}"
 	n = &windows.Notification{
 		Title: "Title",
@@ -366,6 +558,21 @@ func TestMenu(t *testing.T) {
 		if g, e := <-ni.Menu, (windows.MenuEvent{ID: i}); !reflect.DeepEqual(g, e) {
 			t.Errorf("expected %#v, got %#v", e, g)
 		}
+	}
+}
+
+func TestMenuError(t *testing.T) {
+	ni, err := windows.New(name)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer ni.Close()
+
+	menu := ni.CreateMenu()
+	sub := menu.Submenu("Submenu")
+	sub.Item("\000", 1)
+	if _, err := menu.Sys(); err == nil {
+		t.Error("expected error")
 	}
 }
 

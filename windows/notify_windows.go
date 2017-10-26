@@ -79,8 +79,11 @@ func init() {
 // for testing
 var (
 	isShellDLLVersionOrGreater = sys.IsShellDLLVersionOrGreater
+	isWindows7OrGreater        = sys.IsWindows7OrGreater
+	isWindowsXPSP2OrGreater    = sys.IsWindowsXPSP2OrGreater
 	loadImage                  = sys.LoadImage
 	testHookPrepare            func(*NotifyIcon)
+	testHookNotify             func(*Notification)
 )
 
 // NotifyIcon represents a notification icon in the notification area.
@@ -115,18 +118,18 @@ func New(name string) (ni *NotifyIcon, err error) {
 	}
 	// shell32.dll version
 	switch {
-	case sys.IsShellDLLVersionOrGreater(6, 0, 6):
+	case isShellDLLVersionOrGreater(6, 0, 6):
 		ni.data.Size = uint32(unsafe.Sizeof(ni.data))
 		ni.data.Flags |= sys.NIF_SHOWTIP
 		ni.data.Version = sys.NOTIFY_VERSION_4
 		ni.data.InfoFlags |= sys.NIIF_LARGE_ICON
-		if sys.IsWindows7OrGreater() {
+		if isWindows7OrGreater() {
 			ni.data.InfoFlags |= sys.NIIF_RESPECT_QUIET_TIME
 		}
-	case sys.IsShellDLLVersionOrGreater(6, 0, 0):
+	case isShellDLLVersionOrGreater(6, 0, 0):
 		ni.data.Size = sys.NOTIFYICONDATA_V3_SIZE
 		ni.data.Version = sys.NOTIFY_VERSION
-	case sys.IsShellDLLVersionOrGreater(5, 0, 0):
+	case isShellDLLVersionOrGreater(5, 0, 0):
 		ni.data.Size = sys.NOTIFYICONDATA_V2_SIZE
 		ni.data.Version = sys.NOTIFY_VERSION
 	default:
@@ -201,7 +204,7 @@ func (ni *NotifyIcon) prepare() error {
 
 	switch {
 	case ni.GUID != "":
-		if !sys.IsWindows7OrGreater() {
+		if !isWindows7OrGreater() {
 			return VersionError("7")
 		}
 		guid, err := ni.GUID.parse()
@@ -232,6 +235,10 @@ func (ni *NotifyIcon) Notify(n *Notification) error {
 	data := ni.data
 	ni.mu.Unlock()
 
+	if testHookNotify != nil {
+		testHookNotify(n)
+	}
+
 	data.Flags |= sys.NIF_INFO
 	u, err := windows.UTF16FromString(n.Title)
 	if err != nil {
@@ -248,12 +255,12 @@ func (ni *NotifyIcon) Notify(n *Notification) error {
 	case IconNone, IconInfo, IconWarn, IconError:
 		data.InfoFlags |= uint32(n.IconType)
 	case IconUser:
-		if !sys.IsWindowsXPSP2OrGreater() {
+		if !isWindowsXPSP2OrGreater() {
 			return VersionError("XP SP2")
 		}
 		data.InfoFlags |= uint32(n.IconType)
 		if n.Icon != nil {
-			if !sys.IsShellDLLVersionOrGreater(6, 0, 6) {
+			if !isShellDLLVersionOrGreater(6, 0, 6) {
 				return VersionError("Vista")
 			}
 			data.BalloonIcon = n.Icon.h
@@ -263,7 +270,7 @@ func (ni *NotifyIcon) Notify(n *Notification) error {
 	}
 	// sound
 	if !n.Sound {
-		if !sys.IsShellDLLVersionOrGreater(6, 0, 0) {
+		if !isShellDLLVersionOrGreater(6, 0, 0) {
 			return VersionError("XP")
 		}
 		data.InfoFlags |= sys.NIIF_NOSOUND
