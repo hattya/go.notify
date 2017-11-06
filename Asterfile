@@ -5,7 +5,7 @@ aster.title(title);
 
 // go
 aster.watch(/.+\.go$/, function(files) {
-  if (files.some(function(e) { return /[/\\](?:notify|syscall)_windows\.go$/.test(e); })) {
+  if (files.some(function(e) { return /[/\\](?:(?:notify|syscall)_windows|gntp)\.go$/.test(e); })) {
     if (go('generate', './...')) {
       return;
     }

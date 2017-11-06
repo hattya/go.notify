@@ -27,8 +27,11 @@
 package util_test
 
 import (
+	"bufio"
+	"bytes"
 	"image"
 	"image/color/palette"
+	"io"
 	"reflect"
 	"testing"
 
@@ -57,5 +60,19 @@ func TestConvert(t *testing.T) {
 
 	if _, err := util.Convert(image.NewAlpha(image.Rect(0, 0, 32, 32))); err == nil {
 		t.Error("expected error")
+	}
+}
+
+func TestReadBytes(t *testing.T) {
+	if _, err := util.ReadBytes(bufio.NewReader(new(bytes.Buffer)), []byte("\r\n")); err != io.EOF {
+		t.Errorf("expected io.EOF, got %v", err)
+	}
+
+	e := []byte("data\r\n")
+	switch g, err := util.ReadBytes(bufio.NewReader(bytes.NewReader(e)), []byte("\r\n")); {
+	case err != nil:
+		t.Error(err)
+	case !reflect.DeepEqual(g, e):
+		t.Errorf("expected %v, got %v", e, g)
 	}
 }

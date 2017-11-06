@@ -6,6 +6,9 @@ An abstraction library for notification. It provides following implementations:
 freedesktop 
     An implementation of the `Desktop Notifications Specification`_.
 
+gntp
+    An implementation of the `Growl Notification Transport Protocol`_.
+
 windows
     An implementation for the `Windows Notifications`_.
 
@@ -13,6 +16,7 @@ windows
    :target: https://godoc.org/github.com/hattya/go.notify
 
 .. _Desktop Notifications Specification: https://developer.gnome.org/notification-spec/
+.. _Growl Notification Transport Protocol: http://www.growlforwindows.com/gfw/help/gntp.aspx
 .. _Windows Notifications: https://msdn.microsoft.com/en-us/library/windows/desktop/ee330740(v=vs.85).aspx
 
 
