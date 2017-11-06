@@ -29,6 +29,7 @@ package gntp_test
 import (
 	"bufio"
 	"bytes"
+	"crypto/rand"
 	"fmt"
 	"io"
 	"net"
@@ -96,17 +97,67 @@ func (s *Server) Error(conn net.Conn, code gntp.ErrorCode) {
 	io.WriteString(conn, "\r\n")
 }
 
-func (s *Server) MockOK(action string) {
-	s.MockResponse(func(conn net.Conn) {
-		io.WriteString(conn, "GNTP/1.0 -OK NONE\r\n")
-		fmt.Fprintf(conn, "Response-Action: %v\r\n", strings.ToUpper(action))
-		io.WriteString(conn, "Notification-ID:\r\n\r\n")
+func (s *Server) MockOK(action string, ea gntp.EncryptionAlgorithm) {
+	s.MockEncryptedResponse(ea, func(conn net.Conn, i *gntp.Info) {
+		i.MessageType = "-OK"
+
+		fmt.Fprintf(conn, "%v\r\n", i)
+		b := new(bytes.Buffer)
+		fmt.Fprintf(b, "Response-Action: %v\r\n", strings.ToUpper(action))
+		b.WriteString("Notification-ID:\r\n")
+		if i.EncryptionAlgorithm != gntp.NONE {
+			conn.Write(i.Encrypt(b.Bytes()))
+			io.WriteString(conn, "\r\n\r\n")
+		} else {
+			conn.Write(b.Bytes())
+			io.WriteString(conn, "\r\n")
+		}
 	})
 }
 
 func (s *Server) MockError(code gntp.ErrorCode) {
 	s.MockResponse(func(conn net.Conn) {
 		s.Error(conn, code)
+	})
+}
+
+func (s *Server) MockEncryptedResponse(ea gntp.EncryptionAlgorithm, handler func(net.Conn, *gntp.Info)) {
+	s.MockResponse(func(conn net.Conn) {
+		i := &gntp.Info{
+			Version:             "1.0",
+			HashAlgorithm:       gntp.SHA256,
+			EncryptionAlgorithm: ea,
+		}
+		if s.password != "" {
+			// salt
+			i.Salt = make([]byte, 16)
+			if _, err := rand.Read(i.Salt); err != nil {
+				panic(err)
+			}
+			// key
+			h, _ := i.HashAlgorithm.New()
+			io.WriteString(h, s.password)
+			h.Write(i.Salt)
+			k := h.Sum(nil)
+			// key hash
+			h.Reset()
+			h.Write(k)
+			i.KeyHash = h.Sum(nil)
+
+			if i.EncryptionAlgorithm != gntp.NONE {
+				var err error
+				i.Cipher, err = i.EncryptionAlgorithm.New(k)
+				if err != nil {
+					panic(err)
+				}
+				// iv
+				i.IV = make([]byte, i.Cipher.BlockSize())
+				if _, err := rand.Read(i.IV); err != nil {
+					panic(err)
+				}
+			}
+		}
+		handler(conn, i)
 	})
 }
 

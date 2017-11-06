@@ -32,6 +32,7 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 	"crypto/sha256"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net"
@@ -87,7 +88,7 @@ func TestRegister(t *testing.T) {
 		}
 		c.HashAlgorithm = tt.hash
 		c.EncryptionAlgorithm = tt.encryption
-		s.MockOK("REGISTER")
+		s.MockOK("REGISTER", gntp.NONE)
 		_, err := c.Register([]*gntp.Notification{
 			{
 				Name:        "Name",
@@ -129,7 +130,7 @@ func TestRegister(t *testing.T) {
 			c.HashAlgorithm = gntp.MD5
 			c.EncryptionAlgorithm = gntp.NONE
 		}
-		s.MockOK("REGISTER")
+		s.MockOK("REGISTER", gntp.NONE)
 		c.Icon = tt.icon[0]
 		_, err := c.Register([]*gntp.Notification{
 			{
@@ -169,7 +170,7 @@ func TestRegister(t *testing.T) {
 			c.HashAlgorithm = gntp.MD5
 			c.EncryptionAlgorithm = gntp.NONE
 		}
-		s.MockOK("REGISTER")
+		s.MockOK("REGISTER", gntp.NONE)
 		c.Header["X-Header"] = tt.value
 		_, err := c.Register([]*gntp.Notification{
 			{
@@ -231,7 +232,7 @@ func TestNotify(t *testing.T) {
 	c.Server = s.Addr
 	c.Name = name
 
-	s.MockOK("REGISTER")
+	s.MockOK("REGISTER", gntp.NONE)
 	_, err := c.Register([]*gntp.Notification{
 		{
 			Name:    "Name",
@@ -273,7 +274,7 @@ func TestNotify(t *testing.T) {
 		}
 		c.HashAlgorithm = tt.hash
 		c.EncryptionAlgorithm = tt.encryption
-		s.MockOK("NOTIFY")
+		s.MockOK("NOTIFY", gntp.NONE)
 		_, err := c.Notify(&gntp.Notification{
 			Name:           "Name",
 			ID:             "ID",
@@ -316,7 +317,7 @@ func TestNotify(t *testing.T) {
 			c.HashAlgorithm = gntp.MD5
 			c.EncryptionAlgorithm = gntp.NONE
 		}
-		s.MockOK("NOTIFY")
+		s.MockOK("NOTIFY", gntp.NONE)
 		c.Icon = tt.icon
 		_, err := c.Notify(&gntp.Notification{
 			Name:           "Name",
@@ -357,7 +358,7 @@ func TestNotify(t *testing.T) {
 			c.HashAlgorithm = gntp.MD5
 			c.EncryptionAlgorithm = gntp.NONE
 		}
-		s.MockOK("NOTIFY")
+		s.MockOK("NOTIFY", gntp.NONE)
 		c.Header["X-Header"] = tt.value
 		_, err := c.Notify(&gntp.Notification{
 			Name:           "Name",
@@ -381,7 +382,7 @@ func TestNotifyError(t *testing.T) {
 	c.Server = s.Addr
 	c.Name = name
 
-	s.MockOK("REGISTER")
+	s.MockOK("REGISTER", gntp.NONE)
 	_, err := c.Register([]*gntp.Notification{
 		{
 			Name:    "Name",
@@ -483,12 +484,26 @@ func TestResponse(t *testing.T) {
 		Action: "REGISTER",
 		Header: make(textproto.MIMEHeader),
 	}
-	s.MockOK("REGISTER")
-	switch resp, err := c.Register(nil); {
-	case err != nil:
-		t.Error(err)
-	case !reflect.DeepEqual(resp, okResp):
-		t.Errorf("expected %#v, got %#v", okResp, resp)
+	for _, ea := range []gntp.EncryptionAlgorithm{
+		gntp.NONE,
+		gntp.DES,
+		gntp.TDES,
+		gntp.AES,
+	} {
+		if ea != gntp.NONE {
+			s.SetPassword(password)
+			c.Password = password
+		} else {
+			s.SetPassword("")
+			c.Password = ""
+		}
+		s.MockOK("REGISTER", ea)
+		switch resp, err := c.Register(nil); {
+		case err != nil:
+			t.Error(err)
+		case !reflect.DeepEqual(resp, okResp):
+			t.Errorf("expected %#v, got %#v", okResp, resp)
+		}
 	}
 	// -ERROR response
 	code := gntp.InvalidRequest
@@ -532,6 +547,30 @@ func TestResponse(t *testing.T) {
 	if _, err := c.Register(nil); err == nil {
 		t.Error("expected error")
 	}
+	// invalid -OK response (encrypted)
+	s.MockEncryptedResponse(gntp.AES, func(conn net.Conn, i *gntp.Info) {
+		i.MessageType = "-OK"
+
+		fmt.Fprintf(conn, "%v\r\n", i)
+	})
+	if _, err := c.Register(nil); err != io.EOF {
+		t.Errorf("expected io.EOF, got %v", err)
+	}
+	s.MockEncryptedResponse(gntp.AES, func(conn net.Conn, i *gntp.Info) {
+		i.MessageType = "-OK"
+
+		fmt.Fprintf(conn, "%v\r\n", i)
+		bs := i.Cipher.BlockSize()
+		src := make([]byte, bs)
+		for i := 0; i < len(src); i++ {
+			src[i] = byte(i % (bs / 2))
+		}
+		conn.Write(encrypt(i, src))
+		io.WriteString(conn, "\r\n\r\n")
+	})
+	if _, err := c.Register(nil); err != gntp.ErrPKCS7 {
+		t.Errorf("expected ErrPKCS7, got %v", err)
+	}
 	// invalid -ERROR response
 	s.MockResponse(func(conn net.Conn) {
 		io.WriteString(conn, "GNTP/1.0 -ERROR NONE\r\n")
@@ -546,6 +585,15 @@ func TestResponse(t *testing.T) {
 	})
 	if _, err := c.Register(nil); err == nil {
 		t.Error("expected error")
+	}
+	// invalid -ERROR response (encrypted)
+	s.MockEncryptedResponse(gntp.AES, func(conn net.Conn, i *gntp.Info) {
+		i.MessageType = "-ERROR"
+
+		fmt.Fprintf(conn, "%v\r\n", i)
+	})
+	if _, err := c.Register(nil); err != gntp.ErrProtocol {
+		t.Errorf("expected ErrProtocol, got %v", err)
 	}
 }
 
@@ -620,12 +668,6 @@ func TestDecrypt(t *testing.T) {
 	if _, err := rand.Read(i.IV); err != nil {
 		t.Fatal(err)
 	}
-	encrypt := func(i *gntp.Info, src []byte) []byte {
-		dst := make([]byte, len(src))
-		cbc := cipher.NewCBCEncrypter(i.Cipher, i.IV)
-		cbc.CryptBlocks(dst, src)
-		return dst
-	}
 
 	src := make([]byte, len(e))
 	copy(src[:], e[:])
@@ -656,6 +698,13 @@ func TestDecrypt(t *testing.T) {
 	if _, err := i.Decrypt(encrypt(i, src)); err != gntp.ErrPKCS7 {
 		t.Errorf("expected ErrPKCS7, got %v", err)
 	}
+}
+
+func encrypt(i *gntp.Info, src []byte) []byte {
+	dst := make([]byte, len(src))
+	cbc := cipher.NewCBCEncrypter(i.Cipher, i.IV)
+	cbc.CryptBlocks(dst, src)
+	return dst
 }
 
 func TestEncrypt(t *testing.T) {

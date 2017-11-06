@@ -54,6 +54,8 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+
+	"github.com/hattya/go.notify/internal/util"
 )
 
 var (
@@ -244,7 +246,8 @@ func (c *Client) send(mt string, b *buffer) (resp *Response, err error) {
 	io.WriteString(conn, "\r\n")
 
 	// response
-	r := textproto.NewReader(bufio.NewReader(conn))
+	br := bufio.NewReader(conn)
+	r := textproto.NewReader(br)
 	l, err := r.ReadLine()
 	if err != nil {
 		return
@@ -253,12 +256,28 @@ func (c *Client) send(mt string, b *buffer) (resp *Response, err error) {
 	if err != nil {
 		return
 	}
-	hdr, err := r.ReadMIMEHeader()
-	if err != nil {
-		return
-	}
+	var hdr textproto.MIMEHeader
 	switch i.MessageType {
 	case "-OK":
+		if i.EncryptionAlgorithm != NONE {
+			var b []byte
+			b, err = util.ReadBytes(br, []byte("\r\n\r\n"))
+			if err != nil {
+				break
+			}
+			b, err = i.Decrypt(b[:len(b)-4])
+			if err != nil {
+				break
+			}
+			r = textproto.NewReader(bufio.NewReader(bytes.NewReader(b)))
+		}
+		hdr, err = r.ReadMIMEHeader()
+		if err != nil {
+			if err != io.EOF {
+				break
+			}
+			err = nil
+		}
 		resp = &Response{
 			Action: hdr.Get("Response-Action"),
 			ID:     hdr.Get("Notification-ID"),
@@ -267,6 +286,14 @@ func (c *Client) send(mt string, b *buffer) (resp *Response, err error) {
 		hdr.Del("Response-Action")
 		hdr.Del("Notification-ID")
 	case "-ERROR":
+		if i.EncryptionAlgorithm != NONE {
+			err = ErrProtocol
+			break
+		}
+		hdr, err = r.ReadMIMEHeader()
+		if err != nil && err != io.EOF {
+			break
+		}
 		var code int
 		code, err = strconv.Atoi(hdr.Get("Error-Code"))
 		if err != nil {
