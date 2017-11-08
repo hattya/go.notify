@@ -28,7 +28,6 @@ package gntp_test
 
 import (
 	"bytes"
-	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
 	"crypto/sha256"
@@ -560,7 +559,7 @@ func TestResponse(t *testing.T) {
 		i.MessageType = "-OK"
 
 		fmt.Fprintf(conn, "%v\r\n", i)
-		bs := i.Cipher.BlockSize()
+		bs := i.Cipher().BlockSize()
 		src := make([]byte, bs)
 		for i := 0; i < len(src); i++ {
 			src[i] = byte(i % (bs / 2))
@@ -661,12 +660,9 @@ func TestInfo(t *testing.T) {
 
 func TestDecrypt(t *testing.T) {
 	e := []byte("data")
-	k := sha256.Sum256([]byte(password))
-	b, _ := aes.NewCipher(k[:24])
-	bs := b.BlockSize()
-	i := &gntp.Info{IV: make([]byte, bs)}
-	if _, err := rand.Read(i.IV); err != nil {
-		t.Fatal(err)
+	i := &gntp.Info{
+		EncryptionAlgorithm: gntp.AES,
+		HashAlgorithm:       gntp.SHA256,
 	}
 
 	src := make([]byte, len(e))
@@ -677,7 +673,8 @@ func TestDecrypt(t *testing.T) {
 	case !reflect.DeepEqual(g, e):
 		t.Errorf("expected %v, got %v", e, g)
 	}
-	i.Cipher = b
+	i.SetPassword(password)
+	bs := i.Cipher().BlockSize()
 	src = bytes.Repeat([]byte{byte(bs - len(e))}, bs)
 	copy(src[:], e[:])
 	switch g, err := i.Decrypt(encrypt(i, src)); {
@@ -702,23 +699,19 @@ func TestDecrypt(t *testing.T) {
 
 func encrypt(i *gntp.Info, src []byte) []byte {
 	dst := make([]byte, len(src))
-	cbc := cipher.NewCBCEncrypter(i.Cipher, i.IV)
+	cbc := cipher.NewCBCEncrypter(i.Cipher(), i.IV)
 	cbc.CryptBlocks(dst, src)
 	return dst
 }
 
 func TestEncrypt(t *testing.T) {
 	e := []byte("data")
-	k := sha256.Sum256([]byte(password))
-	b, _ := aes.NewCipher(k[:24])
-	bs := b.BlockSize()
-	i := &gntp.Info{IV: make([]byte, bs)}
-	if _, err := rand.Read(i.IV); err != nil {
-		t.Fatal(err)
+	i := &gntp.Info{
+		EncryptionAlgorithm: gntp.AES,
+		HashAlgorithm:       gntp.SHA256,
 	}
-
-	for _, b := range []cipher.Block{nil, b} {
-		i.Cipher = b
+	for _, s := range []string{"", password} {
+		i.SetPassword(s)
 		switch g, err := i.Decrypt(i.Encrypt(e)); {
 		case err != nil:
 			t.Error(err)

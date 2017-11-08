@@ -29,7 +29,6 @@ package gntp_test
 import (
 	"bufio"
 	"bytes"
-	"crypto/rand"
 	"fmt"
 	"io"
 	"net"
@@ -128,34 +127,8 @@ func (s *Server) MockEncryptedResponse(ea gntp.EncryptionAlgorithm, handler func
 			HashAlgorithm:       gntp.SHA256,
 			EncryptionAlgorithm: ea,
 		}
-		if s.password != "" {
-			// salt
-			i.Salt = make([]byte, 16)
-			if _, err := rand.Read(i.Salt); err != nil {
-				panic(err)
-			}
-			// key
-			h, _ := i.HashAlgorithm.New()
-			io.WriteString(h, s.password)
-			h.Write(i.Salt)
-			k := h.Sum(nil)
-			// key hash
-			h.Reset()
-			h.Write(k)
-			i.KeyHash = h.Sum(nil)
-
-			if i.EncryptionAlgorithm != gntp.NONE {
-				var err error
-				i.Cipher, err = i.EncryptionAlgorithm.New(k)
-				if err != nil {
-					panic(err)
-				}
-				// iv
-				i.IV = make([]byte, i.Cipher.BlockSize())
-				if _, err := rand.Read(i.IV); err != nil {
-					panic(err)
-				}
-			}
+		if err := i.SetPassword(s.password); err != nil {
+			panic(err)
 		}
 		handler(conn, i)
 	})

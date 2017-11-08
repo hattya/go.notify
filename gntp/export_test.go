@@ -26,6 +26,12 @@
 
 package gntp
 
+import "crypto/cipher"
+
 func (c *Client) Send(mt string) (resp *Response, err error) {
 	return c.send(mt, c.buffer())
+}
+
+func (i *Info) Cipher() cipher.Block {
+	return i.cipher
 }

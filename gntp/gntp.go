@@ -193,37 +193,8 @@ func (c *Client) send(mt string, b *buffer) (resp *Response, err error) {
 		HashAlgorithm:       c.HashAlgorithm,
 		EncryptionAlgorithm: c.EncryptionAlgorithm,
 	}
-	if c.Password != "" {
-		// salt
-		i.Salt = make([]byte, 16)
-		if _, err = rand.Read(i.Salt); err != nil {
-			return
-		}
-		// key
-		var h hash.Hash
-		h, err = c.HashAlgorithm.New()
-		if err != nil {
-			return
-		}
-		io.WriteString(h, c.Password)
-		h.Write(i.Salt)
-		k := h.Sum(nil)
-		// key hash
-		h.Reset()
-		h.Write(k)
-		i.KeyHash = h.Sum(nil)
-
-		if c.EncryptionAlgorithm != NONE {
-			i.Cipher, err = c.EncryptionAlgorithm.New(k)
-			if err != nil {
-				return
-			}
-			// iv
-			i.IV = make([]byte, i.Cipher.BlockSize())
-			if _, err = rand.Read(i.IV); err != nil {
-				return
-			}
-		}
+	if err = i.SetPassword(c.Password); err != nil {
+		return
 	}
 	io.WriteString(conn, i.String())
 	io.WriteString(conn, "\r\n")
@@ -490,8 +461,7 @@ type Info struct {
 	KeyHash             []byte
 	Salt                []byte
 
-	// Cipher is set on parsing.
-	Cipher cipher.Block
+	cipher cipher.Block
 }
 
 // ParseInfo parses a GNTP information line.
@@ -608,11 +578,11 @@ func ParseInfo(l, password string) (i *Info, err error) {
 			i.KeyHash = kh
 			// verify <ivValue>
 			if i.EncryptionAlgorithm != NONE {
-				i.Cipher, err = i.EncryptionAlgorithm.New(k)
+				i.cipher, err = i.EncryptionAlgorithm.New(k)
 				switch {
 				case err != nil:
 					return nil, err
-				case len(i.IV) != i.Cipher.BlockSize():
+				case len(i.IV) != i.cipher.BlockSize():
 					goto Error
 				}
 			}
@@ -625,11 +595,11 @@ Error:
 
 // Decrypt decrypts the specified data and removes the PKCS #7 padding.
 func (i *Info) Decrypt(data []byte) ([]byte, error) {
-	if i.Cipher == nil {
+	if i.cipher == nil {
 		return data, nil
 	}
 	dst := make([]byte, len(data))
-	cbc := cipher.NewCBCDecrypter(i.Cipher, i.IV)
+	cbc := cipher.NewCBCDecrypter(i.cipher, i.IV)
 	cbc.CryptBlocks(dst, data)
 	// PKCS #7 padding
 	v := dst[len(dst)-1]
@@ -647,19 +617,67 @@ func (i *Info) Decrypt(data []byte) ([]byte, error) {
 
 // Encrypt encrypts the specified data with the PKCS #7 padding.
 func (i *Info) Encrypt(data []byte) []byte {
-	if i.Cipher == nil {
+	if i.cipher == nil {
 		return data
 	}
-	bs := i.Cipher.BlockSize()
+	bs := i.cipher.BlockSize()
 	src := make([]byte, int(len(data)/bs)*bs+bs)
 	copy(src[:], data[:])
 	for i := len(data); i < len(src); i++ {
 		src[i] = byte(len(src) - len(data))
 	}
 	dst := make([]byte, len(src))
-	cbc := cipher.NewCBCEncrypter(i.Cipher, i.IV)
+	cbc := cipher.NewCBCEncrypter(i.cipher, i.IV)
 	cbc.CryptBlocks(dst, src)
 	return dst
+}
+
+// SetPassword updates the IV, KeyHash, and Salt based on the specified
+// password. Their resulting values are dependent on the EncryptionAlgorithm
+// and HashAlgorithm.
+func (i *Info) SetPassword(password string) (err error) {
+	if password == "" {
+		i.IV = nil
+		i.KeyHash = nil
+		i.Salt = nil
+		i.cipher = nil
+	} else {
+		// salt
+		if len(i.Salt) == 0 {
+			i.Salt = make([]byte, 16)
+			if _, err = rand.Read(i.Salt); err != nil {
+				return
+			}
+		}
+		// key
+		var h hash.Hash
+		h, err = i.HashAlgorithm.New()
+		if err != nil {
+			return
+		}
+		io.WriteString(h, password)
+		h.Write(i.Salt)
+		k := h.Sum(nil)
+		// key hash
+		h.Reset()
+		h.Write(k)
+		i.KeyHash = h.Sum(nil)
+
+		if i.EncryptionAlgorithm != NONE {
+			i.cipher, err = i.EncryptionAlgorithm.New(k)
+			if err != nil {
+				return
+			}
+			// iv
+			if len(i.IV) != i.cipher.BlockSize() {
+				i.IV = make([]byte, i.cipher.BlockSize())
+				if _, err = rand.Read(i.IV); err != nil {
+					return
+				}
+			}
+		}
+	}
+	return
 }
 
 func (i *Info) String() string {
