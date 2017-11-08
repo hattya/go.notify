@@ -32,6 +32,7 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"fmt"
+	"image"
 	"io"
 	"io/ioutil"
 	"net"
@@ -105,6 +106,10 @@ func TestRegister(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	img, _, err := image.Decode(bytes.NewReader(b))
+	if err != nil {
+		t.Fatal(err)
+	}
 	for _, tt := range []struct {
 		encrypt bool
 		icon    []gntp.Icon
@@ -113,10 +118,12 @@ func TestRegister(t *testing.T) {
 		{false, []gntp.Icon{url, url}},
 		{false, []gntp.Icon{bytes.NewReader(b), bytes.NewReader(b)}},
 		{false, []gntp.Icon{b, b}},
+		{false, []gntp.Icon{img, img}},
 		// encrypt
 		{true, []gntp.Icon{url, url}},
 		{true, []gntp.Icon{bytes.NewReader(b), bytes.NewReader(b)}},
 		{true, []gntp.Icon{b, b}},
+		{false, []gntp.Icon{img, img}},
 	} {
 		if tt.encrypt {
 			s.SetPassword(password)
@@ -200,6 +207,16 @@ func TestRegisterError(t *testing.T) {
 	c.Icon = nil
 	if _, err := c.Register([]*gntp.Notification{{Icon: 0}}); err == nil {
 		t.Error("expected error")
+	}
+	// image error
+	for _, img := range []image.Image{
+		image.NewAlpha(image.Rect(0, 0, 32, 32)),
+		image.NewGray(image.Rect(0, 0, 0, 0)),
+	} {
+		c.Icon = img
+		if _, err := c.Register(nil); err == nil {
+			t.Error("expected error")
+		}
 	}
 	// read error
 	c.Icon = &reader{}
@@ -292,6 +309,10 @@ func TestNotify(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	img, _, err := image.Decode(bytes.NewReader(b))
+	if err != nil {
+		t.Fatal(err)
+	}
 	for _, tt := range []struct {
 		encrypt bool
 		icon    gntp.Icon
@@ -300,10 +321,12 @@ func TestNotify(t *testing.T) {
 		{false, url},
 		{false, bytes.NewReader(b)},
 		{false, b},
+		{false, img},
 		// encrypt
 		{true, url},
 		{true, bytes.NewReader(b)},
 		{true, b},
+		{true, img},
 	} {
 		if tt.encrypt {
 			s.SetPassword(password)
@@ -401,6 +424,21 @@ func TestNotifyError(t *testing.T) {
 	})
 	if err == nil {
 		t.Error("expected error")
+	}
+	// image error
+	for _, img := range []image.Image{
+		image.NewAlpha(image.Rect(0, 0, 32, 32)),
+		image.NewGray(image.Rect(0, 0, 0, 0)),
+	} {
+		_, err = c.Notify(&gntp.Notification{
+			Name:  "Name",
+			Title: "Title",
+			Text:  "Text",
+			Icon:  img,
+		})
+		if err == nil {
+			t.Error("expected error")
+		}
 	}
 	// read error
 	_, err = c.Notify(&gntp.Notification{

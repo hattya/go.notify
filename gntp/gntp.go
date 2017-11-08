@@ -47,6 +47,8 @@ import (
 	"errors"
 	"fmt"
 	"hash"
+	"image"
+	"image/png"
 	"io"
 	"io/ioutil"
 	"net"
@@ -286,6 +288,7 @@ func (c *Client) send(mt string, b *buffer) (resp *Response, err error) {
 // Icon represents an icon and which supports following types:
 //   - string
 //   - []byte
+//   - image.Image
 //   - io.Reader
 type Icon interface{}
 
@@ -413,6 +416,16 @@ func (b *buffer) Icon(value interface{}) (id string, err error) {
 		id = v
 	case []byte:
 		return b.uniqueid(v)
+	case image.Image:
+		v, err = util.Convert(v)
+		if err != nil {
+			return
+		}
+		w := new(bytes.Buffer)
+		if err = png.Encode(w, v); err != nil {
+			return
+		}
+		return b.uniqueid(w.Bytes())
 	case io.Reader:
 		var data []byte
 		data, err = ioutil.ReadAll(v)
