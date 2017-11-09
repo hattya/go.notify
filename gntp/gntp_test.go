@@ -39,7 +39,9 @@ import (
 	"net/textproto"
 	"path/filepath"
 	"reflect"
+	"strconv"
 	"testing"
+	"time"
 
 	"github.com/hattya/go.notify/gntp"
 )
@@ -478,6 +480,144 @@ type reader struct {
 
 func (r *reader) Read([]byte) (int, error) { return 0, io.ErrUnexpectedEOF }
 
+func TestCallback(t *testing.T) {
+	s := NewServer()
+	defer s.Close()
+
+	c := gntp.New()
+	c.Server = s.Addr
+	c.Name = name
+
+	s.MockOK("REGISTER", gntp.NONE)
+	_, err := c.Register([]*gntp.Notification{
+		{
+			Name:    "Name",
+			Enabled: true,
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, ea := range []gntp.EncryptionAlgorithm{
+		gntp.NONE,
+		gntp.DES,
+		gntp.TDES,
+		gntp.AES,
+	} {
+		for i := 0; i < 10; i++ {
+			if ea != gntp.NONE {
+				s.SetPassword(password)
+				c.Password = password
+			} else {
+				s.SetPassword("")
+				c.Password = ""
+			}
+			res := gntp.Result((i % 3) + 1)
+			s.MockCallback(res, ea)
+			_, err := c.Notify(&gntp.Notification{
+				Name:                "Name",
+				CallbackContext:     strconv.Itoa(i),
+				CallbackContextType: "int",
+			})
+			if err != nil {
+				t.Error(err)
+			} else if g := <-c.Callback; g.Result != res {
+				t.Errorf("expected %v, got %v", res, g.Result)
+			}
+		}
+	}
+
+	s.MockCallback(gntp.TIMEOUT, gntp.NONE)
+	if _, err := c.Notify(new(gntp.Notification)); err != nil {
+		t.Error(err)
+	}
+	time.Sleep(1 * time.Microsecond)
+	c.Reset()
+	c.Wait()
+}
+
+func TestCallbackError(t *testing.T) {
+	s := NewServer()
+	s.SetPassword(password)
+	defer s.Close()
+
+	c := gntp.New()
+	c.Server = s.Addr
+	c.Name = name
+	c.Password = password
+
+	s.MockOK("REGISTER", gntp.NONE)
+	_, err := c.Register([]*gntp.Notification{
+		{
+			Name:    "Name",
+			Enabled: true,
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// invalid -CALLBACK response
+	s.MockEncryptedResponse(gntp.NONE, func(conn net.Conn, i *gntp.Info) {
+		s.OK(conn, i, "NOTIFY")
+
+		io.WriteString(conn, "GNTP/1.0 _ NONE\r\n\r\n")
+	})
+	if _, err := c.Notify(new(gntp.Notification)); err != nil {
+		t.Error(err)
+	}
+	s.MockEncryptedResponse(gntp.NONE, func(conn net.Conn, i *gntp.Info) {
+		s.OK(conn, i, "NOTIFY")
+
+		io.WriteString(conn, "GNTP/1.0 -OK NONE\r\n\r\n")
+	})
+	if _, err := c.Notify(new(gntp.Notification)); err != nil {
+		t.Error(err)
+	}
+	s.MockEncryptedResponse(gntp.NONE, func(conn net.Conn, i *gntp.Info) {
+		s.OK(conn, i, "NOTIFY")
+
+		i.MessageType = "-CALLBACK"
+
+		fmt.Fprintf(conn, "%v\r\n", i)
+		io.WriteString(conn, "Application-Name\r\n\r\n")
+	})
+	if _, err := c.Notify(new(gntp.Notification)); err != nil {
+		t.Error(err)
+	}
+	// invalid -CALLBACK response (encrypted)
+	s.MockEncryptedResponse(gntp.AES, func(conn net.Conn, i *gntp.Info) {
+		s.OK(conn, i, "NOTIFY")
+
+		i.MessageType = "-CALLBACK"
+
+		fmt.Fprintf(conn, "%v\r\n", i)
+	})
+	if _, err := c.Notify(new(gntp.Notification)); err != nil {
+		t.Error(err)
+	}
+	s.MockEncryptedResponse(gntp.AES, func(conn net.Conn, i *gntp.Info) {
+		s.OK(conn, i, "NOTIFY")
+
+		i.MessageType = "-CALLBACK"
+
+		fmt.Fprintf(conn, "%v\r\n", i)
+		bs := i.Cipher().BlockSize()
+		src := make([]byte, bs)
+		for i := 0; i < len(src); i++ {
+			src[i] = byte(i % (bs / 2))
+		}
+		conn.Write(encrypt(i, src))
+		io.WriteString(conn, "\r\n\r\n")
+	})
+	if _, err := c.Notify(new(gntp.Notification)); err != nil {
+		t.Error(err)
+	}
+
+	c.Wait()
+}
+
 func TestRequestError(t *testing.T) {
 	s := NewServer()
 	defer s.Close()
@@ -834,5 +974,19 @@ func TestError(t *testing.T) {
 	err = gntp.Error{Code: code}
 	if g, e := err.Error(), code.Description(); g != e {
 		t.Errorf("Error.Error() = %q, expected %q", g, e)
+	}
+}
+
+func TestResult(t *testing.T) {
+	for i, e := range []string{
+		"Result(0)",
+		"CLICKED",
+		"CLOSED",
+		"TIMEOUT",
+	} {
+		res := gntp.Result(i)
+		if g := res.String(); g != e {
+			t.Errorf("Result.String() = %v, expected %v", g, e)
+		}
 	}
 }

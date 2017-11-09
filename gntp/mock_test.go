@@ -36,6 +36,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/hattya/go.notify/gntp"
 	"github.com/hattya/go.notify/internal/util"
@@ -89,6 +90,22 @@ func (s *Server) SetPassword(password string) {
 	s.password = password
 }
 
+func (s *Server) OK(conn net.Conn, i *gntp.Info, action string) {
+	i.MessageType = "-OK"
+
+	fmt.Fprintf(conn, "%v\r\n", i)
+	b := new(bytes.Buffer)
+	fmt.Fprintf(b, "Response-Action: %v\r\n", strings.ToUpper(action))
+	b.WriteString("Notification-ID:\r\n")
+	if i.EncryptionAlgorithm != gntp.NONE {
+		conn.Write(i.Encrypt(b.Bytes()))
+		io.WriteString(conn, "\r\n\r\n")
+	} else {
+		conn.Write(b.Bytes())
+		io.WriteString(conn, "\r\n")
+	}
+}
+
 func (s *Server) Error(conn net.Conn, code gntp.ErrorCode) {
 	io.WriteString(conn, "GNTP/1.0 -ERROR NONE\r\n")
 	fmt.Fprintf(conn, "Error-Code: %v\r\n", code)
@@ -98,12 +115,30 @@ func (s *Server) Error(conn net.Conn, code gntp.ErrorCode) {
 
 func (s *Server) MockOK(action string, ea gntp.EncryptionAlgorithm) {
 	s.MockEncryptedResponse(ea, func(conn net.Conn, i *gntp.Info) {
-		i.MessageType = "-OK"
+		s.OK(conn, i, action)
+	})
+}
+
+func (s *Server) MockError(code gntp.ErrorCode) {
+	s.MockResponse(func(conn net.Conn) {
+		s.Error(conn, code)
+	})
+}
+
+func (s *Server) MockCallback(res gntp.Result, ea gntp.EncryptionAlgorithm) {
+	s.MockEncryptedResponse(ea, func(conn net.Conn, i *gntp.Info) {
+		s.OK(conn, i, "NOTIFY")
+		// callback
+		i.MessageType = "-CALLBACK"
 
 		fmt.Fprintf(conn, "%v\r\n", i)
 		b := new(bytes.Buffer)
-		fmt.Fprintf(b, "Response-Action: %v\r\n", strings.ToUpper(action))
+		b.WriteString("Application-Name:\r\n")
 		b.WriteString("Notification-ID:\r\n")
+		fmt.Fprintf(b, "Notification-Callback-Result: %v\r\n", res)
+		fmt.Fprintf(b, "Notification-Callback-Timestamp: %v\r\n", time.Now().Format(gntp.RFC3339))
+		b.WriteString("Notification-Callback-Context: context\r\n")
+		b.WriteString("Notification-Callback-Context-Type: context-type\r\n")
 		if i.EncryptionAlgorithm != gntp.NONE {
 			conn.Write(i.Encrypt(b.Bytes()))
 			io.WriteString(conn, "\r\n\r\n")
@@ -111,12 +146,6 @@ func (s *Server) MockOK(action string, ea gntp.EncryptionAlgorithm) {
 			conn.Write(b.Bytes())
 			io.WriteString(conn, "\r\n")
 		}
-	})
-}
-
-func (s *Server) MockError(code gntp.ErrorCode) {
-	s.MockResponse(func(conn net.Conn) {
-		s.Error(conn, code)
 	})
 }
 

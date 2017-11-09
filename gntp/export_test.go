@@ -28,8 +28,14 @@ package gntp
 
 import "crypto/cipher"
 
+var RFC3339 = rfc3339
+
 func (c *Client) Send(mt string) (resp *Response, err error) {
 	return c.send(mt, c.buffer())
+}
+
+func (c *Client) Wait() {
+	c.wg.Wait()
 }
 
 func (i *Info) Cipher() cipher.Block {

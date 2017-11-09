@@ -24,7 +24,7 @@
 //   SOFTWARE.
 //
 
-//go:generate stringer -type HashAlgorithm -output ${GOPACKAGE}_string.go
+//go:generate stringer -type HashAlgorithm,Result -output ${GOPACKAGE}_string.go
 
 // Package gntp implements the Growl Notification Transport Protocol version
 // 1.0.
@@ -35,6 +35,7 @@ package gntp
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/des"
@@ -56,6 +57,8 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/hattya/go.notify/internal/util"
 )
@@ -69,6 +72,8 @@ var (
 	ErrPKCS7      = errors.New("go.notify: invalid PKCS #7 padding")
 )
 
+const rfc3339 = "2006-01-02 15:04:05Z"
+
 // Client is a GNTP client.
 type Client struct {
 	Server              string
@@ -80,14 +85,40 @@ type Client struct {
 
 	// Custom Headers and App-Specific Headers
 	Header map[string]interface{}
+
+	Callback chan *Callback
+	wg       sync.WaitGroup // for testing
+
+	mu     sync.Mutex
+	cb     map[net.Conn]struct{}
+	ctx    context.Context
+	cancel context.CancelFunc
 }
 
 // New returns a new Client.
 func New() *Client {
+	ctx, cancel := context.WithCancel(context.Background())
 	return &Client{
-		Server: "localhost:23053",
-		Header: make(map[string]interface{}),
+		Server:   "localhost:23053",
+		Header:   make(map[string]interface{}),
+		Callback: make(chan *Callback),
+		cb:       make(map[net.Conn]struct{}),
+		ctx:      ctx,
+		cancel:   cancel,
 	}
+}
+
+// Reset closes connections that are waiting for socket callback.
+func (c *Client) Reset() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	for conn := range c.cb {
+		conn.Close()
+	}
+	c.cancel()
+
+	c.ctx, c.cancel = context.WithCancel(context.Background())
 }
 
 // Register sends a REGISTER request to the server.
@@ -160,6 +191,10 @@ func (c *Client) Notify(n *Notification) (*Response, error) {
 	if n.CoalescingID != "" {
 		b.Header("Notification-Coalescing-ID", n.CoalescingID)
 	}
+	if n.CallbackContext != "" {
+		b.Header("Notification-Callback-Context", n.CallbackContext)
+		b.Header("Notification-Callback-Context-Type", n.CallbackContextType)
+	}
 	if n.CallbackTarget != "" {
 		b.Header("Notification-Callback-Target", n.CallbackTarget)
 	}
@@ -187,7 +222,11 @@ func (c *Client) send(mt string, b *buffer) (resp *Response, err error) {
 	if err != nil {
 		return
 	}
-	defer conn.Close()
+	defer func() {
+		if err != nil || mt != "NOTIFY" {
+			conn.Close()
+		}
+	}()
 
 	i := &Info{
 		Version:             "1.0",
@@ -282,7 +321,87 @@ func (c *Client) send(mt string, b *buffer) (resp *Response, err error) {
 	default:
 		err = ErrProtocol
 	}
+	// socket callback
+	if err == nil && mt == "NOTIFY" {
+		c.wg.Add(1)
+		c.mu.Lock()
+		c.cb[conn] = struct{}{}
+		go c.callback(c.ctx, conn, br)
+		c.mu.Unlock()
+	}
 	return
+}
+
+func (c *Client) callback(ctx context.Context, conn net.Conn, br *bufio.Reader) {
+	defer c.wg.Done()
+	defer func() {
+		c.mu.Lock()
+		defer c.mu.Unlock()
+
+		conn.Close()
+		delete(c.cb, conn)
+	}()
+
+	r := textproto.NewReader(br)
+	l, err := r.ReadLine()
+	if err != nil {
+		return
+	}
+	i, err := ParseInfo(l, c.Password)
+	switch {
+	case err != nil:
+		return
+	case i.MessageType != "-CALLBACK":
+		return
+	case i.EncryptionAlgorithm != NONE:
+		b, err := util.ReadBytes(br, []byte("\r\n\r\n"))
+		if err != nil {
+			return
+		}
+		b, err = i.Decrypt(b[:len(b)-4])
+		if err != nil {
+			return
+		}
+		r = textproto.NewReader(bufio.NewReader(bytes.NewBuffer(b)))
+	}
+	hdr, err := r.ReadMIMEHeader()
+	if err != nil && err != io.EOF {
+		return
+	}
+	cb := &Callback{
+		Name:        hdr.Get("Application-Name"),
+		ID:          hdr.Get("Notification-ID"),
+		Context:     hdr.Get("Notification-Callback-Context"),
+		ContextType: hdr.Get("Notification-Callback-Context-Type"),
+		Header:      hdr,
+	}
+	hdr.Del("Application-Name")
+	hdr.Del("Notification-ID")
+	hdr.Del("Notification-Callback-Context")
+	hdr.Del("Notification-Callback-Context-Type")
+	if cb.Name == "" {
+		cb.Name = c.Name
+	}
+	switch strings.ToUpper(hdr.Get("Notification-Callback-Result")) {
+	case "CLICKED", "CLICK":
+		cb.Result = CLICKED
+	case "CLOSED", "CLOSE":
+		cb.Result = CLOSED
+	case "TIMEDOUT", "TIMEOUT":
+		cb.Result = TIMEOUT
+	}
+	if cb.Result != 0 {
+		hdr.Del("Notification-Callback-Result")
+	}
+	cb.Timestamp, err = time.Parse(rfc3339, hdr.Get("Notification-Callback-Timestamp"))
+	if err == nil {
+		hdr.Del("Notification-Callback-Timestamp")
+	}
+
+	select {
+	case c.Callback <- cb:
+	case <-ctx.Done():
+	}
 }
 
 // Icon represents an icon and which supports following types:
@@ -372,17 +491,19 @@ func (ea EncryptionAlgorithm) String() string {
 
 // Notification represents a notification.
 type Notification struct {
-	Name           string
-	DisplayName    string
-	Enabled        bool
-	ID             string
-	Title          string
-	Text           string
-	Sticky         bool
-	Priority       int
-	Icon           Icon
-	CoalescingID   string
-	CallbackTarget string
+	Name                string
+	DisplayName         string
+	Enabled             bool
+	ID                  string
+	Title               string
+	Text                string
+	Sticky              bool
+	Priority            int
+	Icon                Icon
+	CoalescingID        string
+	CallbackContext     string
+	CallbackContextType string
+	CallbackTarget      string
 }
 
 var sanitizer = strings.NewReplacer(
@@ -504,7 +625,7 @@ func ParseInfo(l, password string) (i *Info, err error) {
 	i.MessageType = l[:x]
 	switch i.MessageType {
 	case "REGISTER", "NOTIFY":
-	case "-OK", "-ERROR":
+	case "-OK", "-ERROR", "-CALLBACK":
 	default:
 		goto Error
 	}
@@ -713,3 +834,24 @@ type Response struct {
 	ID     string
 	Header textproto.MIMEHeader
 }
+
+// Callback represents a GNTP callback
+type Callback struct {
+	Name        string
+	ID          string
+	Result      Result
+	Timestamp   time.Time
+	Context     string
+	ContextType string
+	Header      textproto.MIMEHeader
+}
+
+// Result represents a result of the GNTP callback.
+type Result int
+
+// List of results for the GNTP callback.
+const (
+	CLICKED Result = iota + 1
+	CLOSED
+	TIMEOUT
+)
