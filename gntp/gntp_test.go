@@ -221,17 +221,17 @@ func TestRegisterError(t *testing.T) {
 		}
 	}
 	// read error
-	c.Icon = &reader{}
+	c.Icon = new(reader)
 	if _, err := c.Register(nil); err != io.ErrUnexpectedEOF {
 		t.Errorf("expected io.ErrUnexpectedEOF, got %v", err)
 	}
 	c.Icon = nil
-	c.Header["X-Header"] = &reader{}
+	c.Header["X-Header"] = new(reader)
 	if _, err := c.Register(nil); err != io.ErrUnexpectedEOF {
 		t.Errorf("expected io.ErrUnexpectedEOF, got %v", err)
 	}
 	delete(c.Header, "X-Header")
-	if _, err := c.Register([]*gntp.Notification{{Icon: &reader{}}}); err != io.ErrUnexpectedEOF {
+	if _, err := c.Register([]*gntp.Notification{{Icon: new(reader)}}); err != io.ErrUnexpectedEOF {
 		t.Errorf("expected io.ErrUnexpectedEOF, got %v", err)
 	}
 	// unknown hash algorithm
@@ -447,12 +447,12 @@ func TestNotifyError(t *testing.T) {
 		Name:  "Name",
 		Title: "Title",
 		Text:  "Text",
-		Icon:  &reader{},
+		Icon:  new(reader),
 	})
 	if err != io.ErrUnexpectedEOF {
 		t.Errorf("expected io.ErrUnexpectedEOF, got %v", err)
 	}
-	c.Header["X-Header"] = &reader{}
+	c.Header["X-Header"] = new(reader)
 	_, err = c.Notify(&gntp.Notification{
 		Name:  "Name",
 		Title: "Title",
@@ -532,7 +532,7 @@ func TestCallback(t *testing.T) {
 	if _, err := c.Notify(new(gntp.Notification)); err != nil {
 		t.Error(err)
 	}
-	time.Sleep(1 * time.Microsecond)
+	time.Sleep(time.Microsecond)
 	c.Reset()
 	c.Wait()
 }

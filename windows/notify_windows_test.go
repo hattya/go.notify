@@ -504,7 +504,7 @@ func TestBalloonEvent(t *testing.T) {
 		}
 	}
 
-	time.Sleep(1 * time.Second)
+	time.Sleep(time.Second)
 
 	for _, e := range []windows.BalloonEvent{
 		windows.BalloonShown,
@@ -552,7 +552,7 @@ func TestMenu(t *testing.T) {
 		}
 	}
 
-	time.Sleep(1 * time.Second)
+	time.Sleep(time.Second)
 
 	for i := uint16(1); i < 4; i++ {
 		if g, e := <-ni.Menu, (windows.MenuEvent{ID: i}); !reflect.DeepEqual(g, e) {
