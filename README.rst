@@ -15,6 +15,15 @@ windows
 .. image:: https://godoc.org/github.com/hattya/go.notify?status.svg
    :target: https://godoc.org/github.com/hattya/go.notify
 
+.. image:: https://semaphoreci.com/api/v1/hattya/go-notify/branches/master/badge.svg
+   :target: https://semaphoreci.com/hattya/go-notify
+
+.. image:: https://ci.appveyor.com/api/projects/status/ljtswx0rdyear9ft/branch/master?svg=true
+   :target: https://ci.appveyor.com/project/hattya/go-notify/branch/master
+
+.. image:: https://codecov.io/gh/hattya/go.notify/branch/master/graph/badge.svg
+   :target: https://codecov.io/gh/hattya/go.notify
+
 .. _Desktop Notifications Specification: https://developer.gnome.org/notification-spec/
 .. _Growl Notification Transport Protocol: http://www.growlforwindows.com/gfw/help/gntp.aspx
 .. _Windows Notifications: https://msdn.microsoft.com/en-us/library/windows/desktop/ee330740(v=vs.85).aspx
