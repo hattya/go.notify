@@ -73,7 +73,7 @@ aster.watch(/.+\.go$/, function(files) {
   };
   var ok = true;
   pkgs.reduce(function(a, b) {
-    return a.concat(resolve(b));
+    return list.some(function(p) { return p.dir === b; }) ? a.concat(resolve(b)) : a;
   }, []).filter(function(e, i, a) {
     return a.indexOf(e) === i;
   }).sort(function(a, b) {
