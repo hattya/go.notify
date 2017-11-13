@@ -28,7 +28,7 @@ package gntp
 
 import "net/textproto"
 
-// ErrorCode represents a Error-Code value.
+// ErrorCode represents an Error-Code value.
 type ErrorCode int
 
 // List of Error-Code values.
@@ -47,7 +47,7 @@ const (
 	InternalServerError    ErrorCode = 500
 )
 
-// Description returns a Error-Description of the Error-Code. It returns the
+// Description returns an Error-Description of the Error-Code. It returns the
 // empty string if the code is unknown.
 func (code ErrorCode) Description() string {
 	return errorDescription[code]

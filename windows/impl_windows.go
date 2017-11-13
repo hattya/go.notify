@@ -42,8 +42,8 @@ type notifier struct {
 // NewNotifier returns a new Notifier.
 //
 // Register supports following icon types:
-//   - image.Image
 //   - uint16
+//   - image.Image
 //   - IconType
 //   - *Icon
 //

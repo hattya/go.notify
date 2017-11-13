@@ -114,7 +114,7 @@ func (c *Client) Close() error {
 	return c.conn.Close()
 }
 
-// CloseNotification closes and removes the notification of the specified ID.
+// CloseNotification closes and removes the notification of the specified id.
 func (c *Client) CloseNotification(id uint32) error {
 	call := c.obj.Call("CloseNotification", 0, id)
 	return call.Err

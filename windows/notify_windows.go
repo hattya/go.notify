@@ -455,7 +455,7 @@ const (
 	IconUser  IconType = sys.NIIF_USER // requires Windows XP SP2 or later
 )
 
-// Icon represents a handle to an icon.
+// Icon represents a handle of the icon.
 type Icon struct {
 	h windows.Handle
 }

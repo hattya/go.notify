@@ -450,7 +450,7 @@ const (
 	AES
 )
 
-// New returns a new cipher.Block for encryption and the IV.
+// New returns a new cipher.Block.
 func (ea EncryptionAlgorithm) New(key []byte) (cipher.Block, error) {
 	var newCipher func([]byte) (cipher.Block, error)
 	var n int
@@ -767,8 +767,8 @@ func (i *Info) Encrypt(data []byte) []byte {
 }
 
 // SetPassword updates the IV, KeyHash, and Salt based on the specified
-// password. Their resulting values are dependent on the EncryptionAlgorithm
-// and HashAlgorithm.
+// password. Their resulting values are dependent on the values of
+// EncryptionAlgorithm and HashAlgorithm fields.
 func (i *Info) SetPassword(password string) (err error) {
 	if password == "" {
 		i.IV = nil

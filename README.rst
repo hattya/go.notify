@@ -1,7 +1,8 @@
 go.notify
 =========
 
-An abstraction library for notification. It provides following implementations:
+An abstraction library for notifications. It provides following
+implementations:
 
 freedesktop 
     An implementation of the `Desktop Notifications Specification`_.
