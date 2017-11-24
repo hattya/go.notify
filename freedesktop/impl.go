@@ -66,7 +66,7 @@ func (p *notifier) Close() error {
 }
 
 func (p *notifier) Register(event string, icon notify.Icon, opts map[string]interface{}) error {
-	n := new(Notification)
+	n := &Notification{Timeout: -1}
 	switch icon := icon.(type) {
 	case nil:
 	case string:
