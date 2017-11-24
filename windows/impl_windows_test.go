@@ -108,7 +108,7 @@ func TestNotiferRegister(t *testing.T) {
 
 	// windows:sound
 	opts = map[string]interface{}{
-		"windows:sound": true,
+		"windows:sound": false,
 	}
 	if err := n.Register("event", nil, opts); err != nil {
 		t.Error(err)

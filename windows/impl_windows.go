@@ -110,7 +110,7 @@ func (p *notifier) Register(event string, icon notify.Icon, opts map[string]inte
 		return err
 	}
 
-	n := new(Notification)
+	n := &Notification{Sound: true}
 	switch icon := icon.(type) {
 	case nil:
 	case IconType:
