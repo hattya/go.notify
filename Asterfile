@@ -1,157 +1,34 @@
-var proj = os.getwd().split(/[/\\]+/).slice(-1);
-var title = 'Aster ☆ ' + proj;
+var os = require('os');
+var path = require('path');
+var go_ = require('language/go');
+var go = go_.go;
+var rst2html = require('language/restructuredtext').rst2html;
+
+var title = 'Aster ☆ ' + path.basename(os.getwd());
 
 aster.title(title);
 
 // go
 aster.watch(/.+\.go$/, function(files) {
   if (files.some(function(e) { return /[/\\](?:(?:notify|syscall)_windows|gntp)\.go$/.test(e); })) {
-    if (go('generate', './...')) {
-      return;
-    }
+    if (go.generate('./...')) return; 
   }
-  if (go('get', '-t', '-v', './...')) {
-    return;
-  }
-  if (go('vet', '-unsafeptr=false', './...')) {
-    return;
-  }
-  // changed packages
-  var pkgs = files.map(function(f) {
-    return ('./' + f.split(/[/\\]+/).slice(0, -1).join('/')).replace(/\/+$/, '');
-  }).filter(function(e, i, a) {
-    return a.indexOf(e) === i;
-  });
-  // list packages
-  var list = [];
-  if (os.system(['go', 'list', '-f', '{{.Dir}}\t{{.ImportPath}}\t{{join .Imports ","}},{{join .TestImports ","}},{{join .XTestImports ","}}', './...'], {stdout: list})) {
-    return;
-  }
-  var i2p = {};
-  var wd = os.getwd();
-  list = list.map(function(l) {
-    l = l.split(/\t/);
-    var p = {
-      dir: '.' + l[0].slice(wd.length).replace(/\\/g, '/'),
-      importPath: l[1],
-      imports: l[2].split(/,/).filter(function(e, i, a) {
-        return e && a.indexOf(e) === i;
-      }),
-    };
-    i2p[p.importPath] = p;
-    return p;
-  });
-  // reversed dependencies of packages
-  var rdeps = {};
-  list.forEach(function(p) {
-    p.imports.forEach(function(i) {
-      if (i !== p.importPath
-          && i in i2p) {
-        i = i2p[i];
-        if (!(i.dir in rdeps)) {
-          rdeps[i.dir] = [];
-        }
-        rdeps[i.dir].push(p.dir);
-      }
-    });
-  });
+  if (go.get('-t', '-v', './...')) return; 
+  if (go.vet('-unsafeptr=false', './...')) return; 
   // go test for each package
-  var resolve = function(p, seen) {
-    var deps = [p];
-    if (!seen) {
-      seen = {};
-    } else if (p in seen) {
-      return deps;
-    }
-    seen[p] = true;
-    if (p in rdeps) {
-      rdeps[p].forEach(function(d) {
-        Array.prototype.push.apply(deps, resolve(d, seen));
-      });
-    }
-    return deps;
-  };
-  var ok = true;
-  pkgs.reduce(function(a, b) {
-    return list.some(function(p) { return p.dir === b; }) ? a.concat(resolve(b)) : a;
-  }, []).filter(function(e, i, a) {
-    return a.indexOf(e) === i;
-  }).sort(function(a, b) {
-    if (a in rdeps
-        && rdeps[a].indexOf(b) !== -1) {
-      return -1;
-    }
-    return a === b ? 0 : a < b ? -1 : 1;
-  }).some(function(p) {
-    if (go('test', '-v', aster.arch === 'amd64' ? '-race' : '-cover', '-covermode', 'atomic', '-coverprofile', p + '/cover.out', p)) {
-      ok = false;
-    }
-    return !ok;
+  var bad = go_.packagesOf(files).some(function(p) {
+    return go.test('-v', '-race', '-covermode', 'atomic', '-coverprofile', p + '/cover.out', p);
   });
-  if (ok) {
-    var all = os.open('cover.all.out', 'w');
-    all.write('mode: atomic\n');
-    list.forEach(function(p) {
-      try {
-        var f = os.open(p.dir + '/cover.out');
-        f.readLine();
-        for (;;) {
-          var rv = f.readLine();
-          if (rv.eof) break;
-          all.write(rv.buffer + '\n');
-        }
-        f.close();
-      } catch (err) {
-      }
-    });
-    all.close();
-    go.cover('-func', all.name());
-    go.cover('-html', all.name(), '-o', 'coverage.html');
-    os.remove(all.name());
+  // combine coverage profiles
+  if (!bad) {
+    var out = go_.combine({ profile: 'cover.out', out: 'cover.all.out', packages: ['./...'] });
+    go.tool.cover('-func', out);
+    go.tool.cover('-html', out, '-o', 'coverage.html');
+    os.remove(out);
   }
 });
-
-function go() {
-  var args = ['go'].concat(Array.prototype.slice.call(arguments));
-  var cmd = args[1] === 'get' ? 'bulid' : args[1];
-  var rv = system(args);
-  if (!rv) {
-    aster.notify('success', proj + ': ' + cmd, cmd + ' passed');
-  } else {
-    aster.notify('failure', proj + ': ' + cmd, cmd + ' failed');
-  }
-  return rv;
-}
-
-go.cover = function() {
-  return system(['go', 'tool', 'cover'].concat(Array.prototype.slice.call(arguments)));
-};
 
 // rst
 aster.watch(/.+\.rst$/, function(files) {
-  files.forEach(rst2html);
+  files.some(function(rst) { return rst2html({ options: ['--strict'], src: rst }); });
 });
-
-function rst2html(rst) {
-  var rst2html;
-  var ok = ['rst2html.py', 'rst2html'].some(function(s) {
-    rst2html = s;
-    return os.whence(rst2html);
-  });
-  if (!ok) {
-    return true;
-  }
-  var rv = system([rst2html, '--strict', rst, rst.slice(0, -4) + '.html']);
-  if (!rv) {
-    aster.notify('success', proj + ': rst2html', rst);
-  } else {
-    aster.notify('failure', proj + ': rst2html', rst + ' failed');
-  }
-  return rv;
-}
-
-// system
-function system(args) {
-  console.log('+ ' + args.join(' '));
-  return os.system(args);
-}
