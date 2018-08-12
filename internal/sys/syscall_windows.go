@@ -1,7 +1,7 @@
 //
 // go.notify/internal/sys :: syscall_windows.go
 //
-//   Copyright (c) 2017 Akinori Hattori <hattya@gmail.com>
+//   Copyright (c) 2017-2018 Akinori Hattori <hattya@gmail.com>
 //
 //   Permission is hereby granted, free of charge, to any person
 //   obtaining a copy of this software and associated documentation files
@@ -301,7 +301,7 @@ const (
 )
 
 const (
-	NIN_BALLOONSHOW = WM_USER + (iota + 2)
+	NIN_BALLOONSHOW = WM_USER + 2 + iota
 	NIN_BALLOONHIDE
 	NIN_BALLOONTIMEOUT
 	NIN_BALLOONUSERCLICK

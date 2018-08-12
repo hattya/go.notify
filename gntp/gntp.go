@@ -1,7 +1,7 @@
 //
 // go.notify/gntp :: gntp.go
 //
-//   Copyright (c) 2017 Akinori Hattori <hattya@gmail.com>
+//   Copyright (c) 2017-2018 Akinori Hattori <hattya@gmail.com>
 //
 //   Permission is hereby granted, free of charge, to any person
 //   obtaining a copy of this software and associated documentation files
@@ -24,7 +24,7 @@
 //   SOFTWARE.
 //
 
-//go:generate stringer -type HashAlgorithm,Result -output ${GOPACKAGE}_string.go
+//go:generate stringer -type HashAlgorithm,Result -output gntp_string.go
 
 // Package gntp implements the Growl Notification Transport Protocol version
 // 1.0.
@@ -851,7 +851,7 @@ type Result int
 
 // List of results for the GNTP callback.
 const (
-	CLICKED Result = iota + 1
+	CLICKED Result = 1 + iota
 	CLOSED
 	TIMEOUT
 )

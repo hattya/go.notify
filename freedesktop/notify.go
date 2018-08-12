@@ -1,7 +1,7 @@
 //
 // go.notify/freedesktop :: notify.go
 //
-//   Copyright (c) 2017 Akinori Hattori <hattya@gmail.com>
+//   Copyright (c) 2017-2018 Akinori Hattori <hattya@gmail.com>
 //
 //   Permission is hereby granted, free of charge, to any person
 //   obtaining a copy of this software and associated documentation files
@@ -457,7 +457,7 @@ type Reason uint32
 
 // List of reasons for the NotificationClosed signal.
 const (
-	ReasonExpired Reason = iota + 1
+	ReasonExpired Reason = 1 + iota
 	ReasonDismissed
 	ReasonClosed
 	ReasonUndefined

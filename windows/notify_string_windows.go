@@ -2,7 +2,7 @@
 
 package windows
 
-import "fmt"
+import "strconv"
 
 const _BalloonEvent_name = "BalloonShownBalloonClosedBalloonClicked"
 
@@ -10,7 +10,7 @@ var _BalloonEvent_index = [...]uint8{0, 12, 25, 39}
 
 func (i BalloonEvent) String() string {
 	if i >= BalloonEvent(len(_BalloonEvent_index)-1) {
-		return fmt.Sprintf("BalloonEvent(%d)", i)
+		return "BalloonEvent(" + strconv.FormatInt(int64(i), 10) + ")"
 	}
 	return _BalloonEvent_name[_BalloonEvent_index[i]:_BalloonEvent_index[i+1]]
 }
@@ -21,7 +21,7 @@ var _IconType_index = [...]uint8{0, 8, 16, 24, 33, 41}
 
 func (i IconType) String() string {
 	if i >= IconType(len(_IconType_index)-1) {
-		return fmt.Sprintf("IconType(%d)", i)
+		return "IconType(" + strconv.FormatInt(int64(i), 10) + ")"
 	}
 	return _IconType_name[_IconType_index[i]:_IconType_index[i+1]]
 }
