@@ -1,7 +1,7 @@
 //
 // go.notify/freedesktop :: export_test.go
 //
-//   Copyright (c) 2017 Akinori Hattori <hattya@gmail.com>
+//   Copyright (c) 2017-2018 Akinori Hattori <hattya@gmail.com>
 //
 //   Permission is hereby granted, free of charge, to any person
 //   obtaining a copy of this software and associated documentation files
@@ -26,7 +26,11 @@
 
 package freedesktop
 
-import "github.com/godbus/dbus"
+import (
+	"context"
+
+	"github.com/godbus/dbus"
+)
 
 func SetSessionBus(fn func() (*dbus.Conn, error)) func() {
 	save := sessionBus
@@ -79,10 +83,18 @@ type object struct {
 }
 
 func (o *object) Call(method string, flags dbus.Flags, args ...interface{}) *dbus.Call {
-	return o.Go(method, flags, nil, args...)
+	return o.GoWithContext(context.Background(), method, flags, nil, args...)
+}
+
+func (o *object) CallWithContext(ctx context.Context, method string, flags dbus.Flags, args ...interface{}) *dbus.Call {
+	return o.GoWithContext(ctx, method, flags, nil, args...)
 }
 
 func (o *object) Go(method string, flags dbus.Flags, ch chan *dbus.Call, args ...interface{}) *dbus.Call {
+	return o.GoWithContext(context.Background(), method, flags, ch, args...)
+}
+
+func (o *object) GoWithContext(ctx context.Context, method string, flags dbus.Flags, ch chan *dbus.Call, args ...interface{}) *dbus.Call {
 	if len(o.calls) <= o.n {
 		return &dbus.Call{Err: dbus.ErrClosed}
 	}
