@@ -1,7 +1,7 @@
 //
 // go.notify/freedesktop :: export_test.go
 //
-//   Copyright (c) 2017-2018 Akinori Hattori <hattya@gmail.com>
+//   Copyright (c) 2017-2019 Akinori Hattori <hattya@gmail.com>
 //
 //   Permission is hereby granted, free of charge, to any person
 //   obtaining a copy of this software and associated documentation files
@@ -108,6 +108,15 @@ func (o *object) GoWithContext(ctx context.Context, method string, flags dbus.Fl
 	return call
 }
 
+func (o *object) AddMatchSignal(iface, member string, options ...dbus.MatchOption) *dbus.Call {
+	return nil
+}
+
+func (o *object) RemoveMatchSignal(iface, member string, options ...dbus.MatchOption) *dbus.Call {
+	return nil
+}
+
 func (o *object) GetProperty(p string) (dbus.Variant, error) { return dbus.Variant{}, nil }
+func (o *object) SetProperty(p string, v interface{}) error  { return nil }
 func (o *object) Destination() string                        { return o.dest }
 func (o *object) Path() dbus.ObjectPath                      { return o.path }
