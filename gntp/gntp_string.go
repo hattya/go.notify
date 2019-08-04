@@ -4,6 +4,16 @@ package gntp
 
 import "strconv"
 
+func _() {
+	// An "invalid array index" compiler error signifies that the constant values have changed.
+	// Re-run the stringer command to generate them again.
+	var x [1]struct{}
+	_ = x[MD5-0]
+	_ = x[SHA1-1]
+	_ = x[SHA256-2]
+	_ = x[SHA512-3]
+}
+
 const _HashAlgorithm_name = "MD5SHA1SHA256SHA512"
 
 var _HashAlgorithm_index = [...]uint8{0, 3, 7, 13, 19}
@@ -13,6 +23,14 @@ func (i HashAlgorithm) String() string {
 		return "HashAlgorithm(" + strconv.FormatInt(int64(i), 10) + ")"
 	}
 	return _HashAlgorithm_name[_HashAlgorithm_index[i]:_HashAlgorithm_index[i+1]]
+}
+func _() {
+	// An "invalid array index" compiler error signifies that the constant values have changed.
+	// Re-run the stringer command to generate them again.
+	var x [1]struct{}
+	_ = x[CLICKED-1]
+	_ = x[CLOSED-2]
+	_ = x[TIMEOUT-3]
 }
 
 const _Result_name = "CLICKEDCLOSEDTIMEOUT"

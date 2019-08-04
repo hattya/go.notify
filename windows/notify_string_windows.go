@@ -4,6 +4,15 @@ package windows
 
 import "strconv"
 
+func _() {
+	// An "invalid array index" compiler error signifies that the constant values have changed.
+	// Re-run the stringer command to generate them again.
+	var x [1]struct{}
+	_ = x[BalloonShown-0]
+	_ = x[BalloonClosed-1]
+	_ = x[BalloonClicked-2]
+}
+
 const _BalloonEvent_name = "BalloonShownBalloonClosedBalloonClicked"
 
 var _BalloonEvent_index = [...]uint8{0, 12, 25, 39}
@@ -13,6 +22,16 @@ func (i BalloonEvent) String() string {
 		return "BalloonEvent(" + strconv.FormatInt(int64(i), 10) + ")"
 	}
 	return _BalloonEvent_name[_BalloonEvent_index[i]:_BalloonEvent_index[i+1]]
+}
+func _() {
+	// An "invalid array index" compiler error signifies that the constant values have changed.
+	// Re-run the stringer command to generate them again.
+	var x [1]struct{}
+	_ = x[IconNone-0]
+	_ = x[IconInfo-1]
+	_ = x[IconWarn-2]
+	_ = x[IconError-3]
+	_ = x[IconUser-4]
 }
 
 const _IconType_name = "IconNoneIconInfoIconWarnIconErrorIconUser"
