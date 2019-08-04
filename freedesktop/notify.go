@@ -1,7 +1,7 @@
 //
 // go.notify/freedesktop :: notify.go
 //
-//   Copyright (c) 2017-2018 Akinori Hattori <hattya@gmail.com>
+//   Copyright (c) 2017-2019 Akinori Hattori <hattya@gmail.com>
 //
 //   Permission is hereby granted, free of charge, to any person
 //   obtaining a copy of this software and associated documentation files
@@ -116,7 +116,7 @@ func (c *Client) Close() error {
 
 // CloseNotification closes and removes the notification of the specified id.
 func (c *Client) CloseNotification(id uint32) error {
-	call := c.obj.Call("CloseNotification", 0, id)
+	call := c.obj.Call("org.freedesktop.Notifications.CloseNotification", 0, id)
 	return call.Err
 }
 
@@ -125,7 +125,7 @@ func (c *Client) CloseNotification(id uint32) error {
 // See https://developer.gnome.org/notification-spec/#command-get-capabilities
 // for available capabilities.
 func (c *Client) GetCapabilities() (caps []string, err error) {
-	call := c.obj.Call("GetCapabilities", 0)
+	call := c.obj.Call("org.freedesktop.Notifications.GetCapabilities", 0)
 	if call.Err != nil {
 		err = call.Err
 	} else {
@@ -136,7 +136,7 @@ func (c *Client) GetCapabilities() (caps []string, err error) {
 
 // GetServerInformation retrieves the information of the server.
 func (c *Client) GetServerInformation() (si ServerInfo, err error) {
-	call := c.obj.Call("GetServerInformation", 0)
+	call := c.obj.Call("org.freedesktop.Notifications.GetServerInformation", 0)
 	if call.Err != nil {
 		err = call.Err
 	} else {
@@ -184,7 +184,7 @@ func (c *Client) Notify(n *Notification) (id uint32, err error) {
 		}
 	}
 
-	call := c.obj.Call("Notify", 0, n.Name, n.ID, n.Icon, n.Summary, n.Body, n.Actions, hints, n.Timeout)
+	call := c.obj.Call("org.freedesktop.Notifications.Notify", 0, n.Name, n.ID, n.Icon, n.Summary, n.Body, n.Actions, hints, n.Timeout)
 	if call.Err != nil {
 		err = call.Err
 	} else {
