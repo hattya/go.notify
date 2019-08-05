@@ -53,14 +53,15 @@ func NewServer() *Server {
 
 func (s *Server) Close() {
 	s.mu.Lock()
-	defer s.mu.Unlock()
 	select {
 	case <-s.done:
-	default:
+		s.mu.Unlock()
 		return
+	default:
+		close(s.done)
 	}
+	s.mu.Unlock()
 
-	close(s.done)
 	s.l.Close()
 	s.wg.Wait()
 }
@@ -138,7 +139,10 @@ func (s *Server) MockEncryptedResponse(ea gntp.EncryptionAlgorithm, handler func
 			HashAlgorithm:       gntp.SHA256,
 			EncryptionAlgorithm: ea,
 		}
-		if err := i.SetPassword(s.password); err != nil {
+		s.mu.Lock()
+		pwd := s.password
+		s.mu.Unlock()
+		if err := i.SetPassword(pwd); err != nil {
 			panic(err)
 		}
 		handler(conn, i)
@@ -162,8 +166,8 @@ func (s *Server) serve() {
 			case <-s.done:
 				return
 			default:
+				panic(err)
 			}
-			panic(err)
 		}
 
 		s.wg.Add(1)
@@ -188,14 +192,15 @@ func (s *Server) handle(conn net.Conn) {
 		return
 	}
 	s.mu.Lock()
-	i, err := gntp.ParseInfo(l, s.password)
+	pwd := s.password
 	s.mu.Unlock()
+	i, err := gntp.ParseInfo(l, pwd)
 	if err != nil {
 		s.Error(conn, gntp.UnknownProtocol)
 		return
 	}
 	// auth
-	if s.password != "" && i.KeyHash == nil {
+	if pwd != "" && i.KeyHash == nil {
 		s.Error(conn, gntp.NotAuthorized)
 		return
 	}
@@ -234,15 +239,14 @@ func (s *Server) handle(conn net.Conn) {
 	s.crlf(br)
 
 	// response
-	if 0 < len(s.handlers) {
-		s.mu.Lock()
-		fn := s.handlers[0]
+	s.mu.Lock()
+	if len(s.handlers) != 0 {
+		defer s.handlers[0](conn)
 		s.handlers = s.handlers[1:]
-		s.mu.Unlock()
-		fn(conn)
 	} else {
 		s.Error(conn, gntp.InternalServerError)
 	}
+	s.mu.Unlock()
 }
 
 func (s *Server) numBlob(i *gntp.Info, r *textproto.Reader) int {

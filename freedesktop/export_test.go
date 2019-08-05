@@ -30,8 +30,8 @@ func init() {
 			calls: []*dbus.Call{MockBusMethodCall(), MockBusMethodCall()},
 		}
 		c.obj = &object{
-			dest: notifications,
-			path: objectPath,
+			dest: iface,
+			path: path,
 		}
 	}
 }
@@ -46,8 +46,8 @@ func (c *Client) NumMethodCalls() int {
 }
 
 func (c *Client) MockSignal(sig *dbus.Signal) {
-	sig.Path = objectPath
-	sig.Name = notifications + "." + sig.Name
+	sig.Path = path
+	sig.Name = iface + "." + sig.Name
 	c.c <- sig
 }
 

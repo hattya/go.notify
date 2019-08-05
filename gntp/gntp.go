@@ -305,11 +305,11 @@ func (c *Client) send(mt string, b *buffer) (resp *Response, err error) {
 	}
 	// socket callback
 	if err == nil && mt == "NOTIFY" {
-		c.wg.Add(1)
 		c.mu.Lock()
 		c.cb[conn] = struct{}{}
-		go c.callback(c.ctx, conn, br)
 		c.mu.Unlock()
+		c.wg.Add(1)
+		go c.callback(c.ctx, conn, br)
 	}
 	return
 }
@@ -318,11 +318,10 @@ func (c *Client) callback(ctx context.Context, conn net.Conn, br *bufio.Reader) 
 	defer c.wg.Done()
 	defer func() {
 		c.mu.Lock()
-		defer c.mu.Unlock()
-
-		conn.Close()
 		delete(c.cb, conn)
+		c.mu.Unlock()
 	}()
+	defer conn.Close()
 
 	r := textproto.NewReader(br)
 	l, err := r.ReadLine()

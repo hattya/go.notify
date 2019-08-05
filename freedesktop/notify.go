@@ -16,6 +16,7 @@ import (
 	"fmt"
 	"image"
 	"math"
+	"strings"
 	"sync"
 
 	"github.com/godbus/dbus"
@@ -23,11 +24,10 @@ import (
 )
 
 const (
-	addMatch                           = "org.freedesktop.DBus.AddMatch"
-	notifications                      = "org.freedesktop.Notifications"
-	notificationClosed                 = "org.freedesktop.Notifications.NotificationClosed"
-	actionInvoked                      = "org.freedesktop.Notifications.ActionInvoked"
-	objectPath         dbus.ObjectPath = "/org/freedesktop/Notifications"
+	path               dbus.ObjectPath = "/org/freedesktop/Notifications"
+	iface                              = "org.freedesktop.Notifications"
+	notificationClosed                 = iface + ".NotificationClosed"
+	actionInvoked                      = iface + ".ActionInvoked"
 )
 
 // for testing
@@ -62,7 +62,7 @@ func New() (*Client, error) {
 		ActionInvoked:      make(chan ActionInvoked),
 		conn:               conn,
 		busObj:             conn.BusObject(),
-		obj:                conn.Object(notifications, objectPath),
+		obj:                conn.Object(iface, path),
 		c:                  make(chan *dbus.Signal),
 		done:               make(chan struct{}),
 	}
@@ -71,7 +71,7 @@ func New() (*Client, error) {
 	}
 	// signal
 	c.conn.Signal(c.c)
-	for _, sig := range []string{"NotificationClosed", "ActionInvoked"} {
+	for _, sig := range []string{notificationClosed, actionInvoked} {
 		if err := c.addMatch(sig); err != nil {
 			return nil, err
 		}
@@ -84,14 +84,15 @@ func New() (*Client, error) {
 // Close closes the D-Bus connection.
 func (c *Client) Close() error {
 	c.mu.Lock()
-	defer c.mu.Unlock()
 	select {
 	case <-c.done:
+		c.mu.Unlock()
 		return nil
 	default:
+		close(c.done)
 	}
+	c.mu.Unlock()
 
-	close(c.done)
 	c.wg.Wait()
 	return c.conn.Close()
 }
@@ -130,7 +131,7 @@ func (c *Client) GetServerInformation() (si ServerInfo, err error) {
 // Notify sends a notification to the server.
 func (c *Client) Notify(n *Notification) (id uint32, err error) {
 	hints := make(map[string]dbus.Variant)
-	if 0 < len(n.Hints) {
+	if len(n.Hints) != 0 {
 		var si ServerInfo
 		si, err = c.GetServerInformation()
 		if err != nil {
@@ -176,7 +177,8 @@ func (c *Client) Notify(n *Notification) (id uint32, err error) {
 }
 
 func (c *Client) addMatch(sig string) error {
-	call := c.busObj.Call(addMatch, 0, fmt.Sprintf(`type='signal',interface='%v',member='%v'`, notifications, sig))
+	i := strings.LastIndexByte(sig, '.')
+	call := c.busObj.Call("org.freedesktop.DBus.AddMatch", 0, fmt.Sprintf(`type='signal',interface='%v',member='%v'`, sig[:i], sig[i+1:]))
 	return call.Err
 }
 
@@ -191,7 +193,7 @@ func (c *Client) signal() {
 	for {
 		select {
 		case sig := <-c.c:
-			if sig != nil && sig.Path == objectPath {
+			if sig != nil && sig.Path == path {
 				switch sig.Name {
 				case notificationClosed:
 					if closed == nil {

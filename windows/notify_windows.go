@@ -141,15 +141,15 @@ func New(name string) (ni *NotifyIcon, err error) {
 func (ni *NotifyIcon) Close() error {
 	ni.mu.Lock()
 	defer ni.mu.Unlock()
+
 	select {
 	case <-ni.done:
 		return nil
 	default:
+		sys.PostMessage(ni.wnd, sys.WM_CLOSE, 0, 0)
+		ni.wg.Wait()
+		return <-ni.err
 	}
-
-	sys.PostMessage(ni.wnd, sys.WM_CLOSE, 0, 0)
-	ni.wg.Wait()
-	return <-ni.err
 }
 
 // Add adds the NotifyIcon to the notification area.
