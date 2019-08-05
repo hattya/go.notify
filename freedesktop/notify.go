@@ -182,6 +182,12 @@ func (c *Client) addMatch(sig string) error {
 	return call.Err
 }
 
+func (c *Client) removeMatch(sig string) error {
+	i := strings.LastIndexByte(sig, '.')
+	call := c.busObj.Call("org.freedesktop.DBus.RemoveMatch", 0, fmt.Sprintf(`type='signal',interface='%v',member='%v'`, sig[:i], sig[i+1:]))
+	return call.Err
+}
+
 func (c *Client) signal() {
 	defer c.wg.Done()
 
@@ -228,6 +234,9 @@ func (c *Client) signal() {
 				invokedBuf = invokedBuf[1:]
 			}
 		case <-c.done:
+			for _, sig := range []string{notificationClosed, actionInvoked} {
+				c.removeMatch(sig)
+			}
 			return
 		}
 	}
