@@ -6,7 +6,7 @@
 //   SPDX-License-Identifier: MIT
 //
 
-//go:generate go run $GOROOT/src/syscall/mksyscall_windows.go -output z$GOFILE $GOFILE
+//go:generate go run golang.org/x/sys/windows/mkwinsyscall -output z$GOFILE $GOFILE
 
 package sys
 
