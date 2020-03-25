@@ -1,7 +1,7 @@
 //
 // go.notify/freedesktop :: export_test.go
 //
-//   Copyright (c) 2017-2019 Akinori Hattori <hattya@gmail.com>
+//   Copyright (c) 2017-2020 Akinori Hattori <hattya@gmail.com>
 //
 //   SPDX-License-Identifier: MIT
 //
@@ -11,7 +11,7 @@ package freedesktop
 import (
 	"context"
 
-	"github.com/godbus/dbus"
+	"github.com/godbus/dbus/v5"
 )
 
 func SetSessionBus(fn func() (*dbus.Conn, error)) func() {

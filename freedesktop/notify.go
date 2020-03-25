@@ -1,7 +1,7 @@
 //
 // go.notify/freedesktop :: notify.go
 //
-//   Copyright (c) 2017-2019 Akinori Hattori <hattya@gmail.com>
+//   Copyright (c) 2017-2020 Akinori Hattori <hattya@gmail.com>
 //
 //   SPDX-License-Identifier: MIT
 //
@@ -19,7 +19,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/godbus/dbus"
+	"github.com/godbus/dbus/v5"
 	"github.com/hattya/go.notify/internal/util"
 )
 
