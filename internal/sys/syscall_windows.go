@@ -1,7 +1,7 @@
 //
 // go.notify/internal/sys :: syscall_windows.go
 //
-//   Copyright (c) 2017-2019 Akinori Hattori <hattya@gmail.com>
+//   Copyright (c) 2017-2020 Akinori Hattori <hattya@gmail.com>
 //
 //   SPDX-License-Identifier: MIT
 //
@@ -175,7 +175,7 @@ func MakeIntResource(i uint16) *uint16 {
 }
 
 //sys	AppendMenu(menu windows.Handle, flags uint32, id uintptr, item *uint16) (err error) = user32.AppendMenuW
-//sys	CreateIconIndirect(ii *IconInfo) (icon windows.Handle, err error) = user32.
+//sys	CreateIconIndirect(ii *IconInfo) (icon windows.Handle, err error) = user32.CreateIconIndirect
 //sys	CreatePopupMenu() (menu windows.Handle, err error) = user32.CreatePopupMenu
 //sys	CreateWindowEx(exStyle uint32, className *uint16, windowName *uint16, style uint32, x int32, y int32, w int32, h int32, parent windows.Handle, menu windows.Handle, inst windows.Handle, param unsafe.Pointer) (wnd windows.Handle, err error) = user32.CreateWindowExW
 //sys	DefWindowProc(wnd windows.Handle, msg uint32, wParam uintptr, lParam uintptr) (res uintptr) = user32.DefWindowProcW
