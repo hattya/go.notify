@@ -4,7 +4,7 @@ go.notify
 An abstraction library for notifications. It provides following
 implementations:
 
-freedesktop 
+freedesktop
     An implementation of the `Desktop Notifications Specification`_.
 
 gntp

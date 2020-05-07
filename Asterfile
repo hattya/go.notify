@@ -11,7 +11,7 @@ aster.title(title);
 // go
 aster.watch(/.+\.go$/, function(files) {
   if (files.some(function(e) { return /[/\\](?:(?:notify|syscall)_windows|gntp)\.go$/.test(e); })) {
-    if (go.generate('./...')) return; 
+    if (go.generate('./...')) return;
   }
   // go test for each package
   var bad = go_.packagesOf(files).some(function(p) {
@@ -24,7 +24,7 @@ aster.watch(/.+\.go$/, function(files) {
     go.tool.cover('-html', out, '-o', 'coverage.html');
     os.remove(out);
   }
-  if (go.vet('-unsafeptr=false', './...')) return; 
+  if (go.vet('-unsafeptr=false', './...')) return;
 });
 
 // rst
