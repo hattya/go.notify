@@ -1,7 +1,7 @@
 //
 // go.notify/internal/util :: util.go
 //
-//   Copyright (c) 2017-2019 Akinori Hattori <hattya@gmail.com>
+//   Copyright (c) 2017-2020 Akinori Hattori <hattya@gmail.com>
 //
 //   SPDX-License-Identifier: MIT
 //
@@ -42,7 +42,7 @@ func Convert(img image.Image) (image.Image, error) {
 	} else {
 		dst = image.NewNRGBA(img.Bounds())
 	}
-	draw.Draw(dst, dst.Bounds(), img, image.ZP, draw.Src)
+	draw.Draw(dst, dst.Bounds(), img, image.Point{}, draw.Src)
 	return dst, nil
 }
 

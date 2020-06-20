@@ -1,7 +1,7 @@
 //
 // go.notify/gntp :: mock_test.go
 //
-//   Copyright (c) 2017-2019 Akinori Hattori <hattya@gmail.com>
+//   Copyright (c) 2017-2020 Akinori Hattori <hattya@gmail.com>
 //
 //   SPDX-License-Identifier: MIT
 //
@@ -290,8 +290,4 @@ func (s *Server) crlf(r *bufio.Reader) {
 	case len(b) != 2 || b[0] != '\r':
 		panic("expected CRLF")
 	}
-}
-
-func panicf(format string, args ...interface{}) {
-	panic(fmt.Sprintf(format, args...))
 }
