@@ -584,7 +584,7 @@ func (g GUID) parse() (guid windows.GUID, err error) {
 			s = s[1 : len(s)-1]
 		}
 		for i, n := range []int{8, 4, 4, 4, 12} {
-			if 0 < i {
+			if i > 0 {
 				if s == "" || s[0] != '-' {
 					goto Error
 				}

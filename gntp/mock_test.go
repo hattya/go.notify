@@ -271,7 +271,7 @@ func (s *Server) numBlob(i *gntp.Info, r *textproto.Reader) int {
 		if err != nil {
 			panic(err)
 		}
-		for ; 0 < i; i-- {
+		for ; i > 0; i-- {
 			hdr, err := r.ReadMIMEHeader()
 			if err != nil && err != io.EOF {
 				panic(err)
