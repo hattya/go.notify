@@ -4,5 +4,5 @@ go 1.13
 
 require (
 	github.com/godbus/dbus/v5 v5.0.3
-	golang.org/x/sys v0.0.0-20200321134203-328b4cd54aae
+	golang.org/x/sys v0.0.0-20201113233024-12cec1faf1ba
 )
