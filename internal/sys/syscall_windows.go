@@ -170,6 +170,7 @@ type WndClassEx struct {
 	IconSm     windows.Handle
 }
 
+//go:nocheckptr
 func MakeIntResource(i uint16) *uint16 {
 	return (*uint16)(unsafe.Pointer(uintptr(i)))
 }

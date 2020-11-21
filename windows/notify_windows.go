@@ -1,7 +1,7 @@
 //
 // go.notify/windows :: notify_windows.go
 //
-//   Copyright (c) 2017-2019 Akinori Hattori <hattya@gmail.com>
+//   Copyright (c) 2017-2020 Akinori Hattori <hattya@gmail.com>
 //
 //   SPDX-License-Identifier: MIT
 //
@@ -404,6 +404,7 @@ func (ni *NotifyIcon) windowProc(wnd windows.Handle, msg uint32, wParam, lParam 
 	return 0
 }
 
+//go:nocheckptr
 func windowProc(wnd windows.Handle, msg uint32, wParam, lParam uintptr) uintptr {
 	if msg == sys.WM_CREATE {
 		cs := (*sys.CreateStruct)(unsafe.Pointer(lParam))
