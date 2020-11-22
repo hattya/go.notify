@@ -16,6 +16,9 @@ windows
 .. image:: https://godoc.org/github.com/hattya/go.notify?status.svg
    :target: https://godoc.org/github.com/hattya/go.notify
 
+.. image:: https://github.com/hattya/go.notify/workflows/CI/badge.svg
+   :target: https://github.com/hattya/go.notify/actions?query=workflow:CI
+
 .. image:: https://semaphoreci.com/api/v1/hattya/go-notify/branches/master/badge.svg
    :target: https://semaphoreci.com/hattya/go-notify
 
