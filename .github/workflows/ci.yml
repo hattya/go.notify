@@ -9,6 +9,7 @@ jobs:
         platform:
           - Linux
           - macOS
+          - Windows
         go-version:
           - 1.13
           - 1.14
@@ -18,6 +19,8 @@ jobs:
             os: ubuntu-latest
           - platform: macOS
             os: macos-latest
+          - platform: Windows
+            os: windows-latest
       fail-fast: false
     name: Go ${{ matrix.go-version }} on ${{ matrix.platform }}
     runs-on: ${{ matrix.os }}
@@ -34,7 +37,7 @@ jobs:
       - name: Test
         run: go test -v -race -covermode atomic -coverprofile coverage.txt ./...
       - name: Vet
-        run: go vet ./...
+        run: go vet -unsafeptr=false ./...
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1
         with:
