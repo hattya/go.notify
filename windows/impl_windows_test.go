@@ -1,7 +1,7 @@
 //
 // go.notify/windows :: impl_windows_test.go
 //
-//   Copyright (c) 2017-2019 Akinori Hattori <hattya@gmail.com>
+//   Copyright (c) 2017-2020 Akinori Hattori <hattya@gmail.com>
 //
 //   SPDX-License-Identifier: MIT
 //
@@ -11,6 +11,7 @@ package windows_test
 import (
 	"image"
 	"math"
+	"os"
 	"testing"
 	"time"
 
@@ -18,13 +19,13 @@ import (
 	"github.com/hattya/go.notify/windows"
 )
 
-func TestNotiferError(t *testing.T) {
+func TestNotifierError(t *testing.T) {
 	if _, err := windows.NewNotifier("\000", nil); err == nil {
 		t.Error("expected error")
 	}
 }
 
-func TestNotiferRegister(t *testing.T) {
+func TestNotifierRegister(t *testing.T) {
 	n, err := windows.NewNotifier(name, nil)
 	if err != nil {
 		t.Fatal(err)
@@ -111,7 +112,7 @@ func TestNotiferRegister(t *testing.T) {
 	}
 }
 
-func TestNotiferNotify(t *testing.T) {
+func TestNotifierNotify(t *testing.T) {
 	n, err := windows.NewNotifier(name, nil)
 	if err != nil {
 		t.Fatal(err)
@@ -138,10 +139,13 @@ func TestNotiferNotify(t *testing.T) {
 		case <-ni.Balloon:
 			i++
 		case <-time.After(1 * time.Second):
-			if i < 1 {
+			switch {
+			case os.Getenv("GITHUB_ACTIONS") != "":
+				// Windows Push Notifications User Service is disabled
+			case i < 1:
 				t.Fatal("timeout")
 			}
-			i = 99
+			i = 9
 		}
 	}
 }
