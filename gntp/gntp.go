@@ -1,7 +1,7 @@
 //
 // go.notify/gntp :: gntp.go
 //
-//   Copyright (c) 2017-2019 Akinori Hattori <hattya@gmail.com>
+//   Copyright (c) 2017-2020 Akinori Hattori <hattya@gmail.com>
 //
 //   SPDX-License-Identifier: MIT
 //
@@ -736,10 +736,11 @@ func (i *Info) Encrypt(data []byte) []byte {
 		return data
 	}
 	bs := i.cipher.BlockSize()
-	src := make([]byte, int(len(data)/bs)*bs+bs)
+	pad := bs - len(data)%bs
+	src := make([]byte, len(data)+pad)
 	copy(src[:], data[:])
 	for i := len(data); i < len(src); i++ {
-		src[i] = byte(len(src) - len(data))
+		src[i] = byte(pad)
 	}
 	dst := make([]byte, len(src))
 	cbc := cipher.NewCBCEncrypter(i.cipher, i.IV)
