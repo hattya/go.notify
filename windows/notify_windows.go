@@ -394,9 +394,11 @@ func (ni *NotifyIcon) windowProc(wnd windows.Handle, msg uint32, wParam, lParam 
 		// disable Alt+F4
 	default:
 		if msg == _WM_TASKBARCREATED {
-			atomic.StoreInt32(&ni.added, 0)
-			if err := ni.Add(); err != nil {
-				panic(err)
+			if ni.Modify() != nil {
+				atomic.StoreInt32(&ni.added, 0)
+				if err := ni.Add(); err != nil {
+					panic(err)
+				}
 			}
 		}
 		return sys.DefWindowProc(wnd, msg, wParam, lParam)
