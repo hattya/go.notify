@@ -1,7 +1,7 @@
 //
 // go.notify/windows :: export_windows_test.go
 //
-//   Copyright (c) 2017-2019 Akinori Hattori <hattya@gmail.com>
+//   Copyright (c) 2017-2021 Akinori Hattori <hattya@gmail.com>
 //
 //   SPDX-License-Identifier: MIT
 //
@@ -34,7 +34,11 @@ func MockWindows2000() {
 	windowsVersion = append(windowsVersion, 0x0500000)
 }
 
+var WM_TASKBARCREATED uint32
+
 func init() {
+	WM_TASKBARCREATED = _WM_TASKBARCREATED
+
 	isShellDLLVersionOrGreater = func(major, minor, build uint32) bool {
 		if len(shellDLLVersion) == 0 {
 			return sys.IsShellDLLVersionOrGreater(major, minor, build)

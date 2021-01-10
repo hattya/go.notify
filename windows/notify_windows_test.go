@@ -1,7 +1,7 @@
 //
 // go.notify/windows :: notify_windows_test.go
 //
-//   Copyright (c) 2017-2019 Akinori Hattori <hattya@gmail.com>
+//   Copyright (c) 2017-2021 Akinori Hattori <hattya@gmail.com>
 //
 //   SPDX-License-Identifier: MIT
 //
@@ -556,6 +556,22 @@ func TestMenuError(t *testing.T) {
 	if _, err := menu.Sys(); err == nil {
 		t.Error("expected error")
 	}
+}
+
+func TestTaskbarCreated(t *testing.T) {
+	ni, err := windows.New(name)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer ni.Close()
+
+	for i := 0; i < 3; i++ {
+		if err := ni.PostMessage(windows.WM_TASKBARCREATED, 0, 0); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	time.Sleep(time.Second)
 }
 
 func TestVersionError(t *testing.T) {
