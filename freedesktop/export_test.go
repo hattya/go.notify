@@ -1,7 +1,7 @@
 //
 // go.notify/freedesktop :: export_test.go
 //
-//   Copyright (c) 2017-2020 Akinori Hattori <hattya@gmail.com>
+//   Copyright (c) 2017-2021 Akinori Hattori <hattya@gmail.com>
 //
 //   SPDX-License-Identifier: MIT
 //
@@ -98,7 +98,8 @@ func (o *object) RemoveMatchSignal(iface, member string, options ...dbus.MatchOp
 	return nil
 }
 
-func (o *object) GetProperty(p string) (dbus.Variant, error) { return dbus.Variant{}, nil }
-func (o *object) SetProperty(p string, v interface{}) error  { return nil }
-func (o *object) Destination() string                        { return o.dest }
-func (o *object) Path() dbus.ObjectPath                      { return o.path }
+func (o *object) GetProperty(string) (dbus.Variant, error) { return dbus.Variant{}, nil }
+func (o *object) StoreProperty(string, interface{}) error  { return nil }
+func (o *object) SetProperty(string, interface{}) error    { return nil }
+func (o *object) Destination() string                      { return o.dest }
+func (o *object) Path() dbus.ObjectPath                    { return o.path }
