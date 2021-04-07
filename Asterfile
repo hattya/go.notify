@@ -13,6 +13,7 @@ aster.watch(/.+\.go$/, function(files) {
   if (files.some(function(e) { return /[/\\](?:(?:notify|syscall)_windows|gntp)\.go$/.test(e); })) {
     if (go.generate('./...')) return;
   }
+  go.mod.tidy();
   // go test for each package
   var bad = go_.packagesOf(files).some(function(p) {
     return go.test('-v', '-race', '-covermode', 'atomic', '-coverprofile', p + '/cover.out', p);
@@ -25,6 +26,10 @@ aster.watch(/.+\.go$/, function(files) {
     os.remove(out);
   }
   if (go.vet('-unsafeptr=false', './...')) return;
+});
+
+aster.watch(/go\.mod$/, function() {
+  go.mod.tidy();
 });
 
 // md
