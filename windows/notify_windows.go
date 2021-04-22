@@ -31,8 +31,8 @@ import (
 )
 
 var (
-	ErrGUID = errors.New("go.notify: invalid GUID format")
-	ErrIcon = errors.New("go.notify: unknown icon type")
+	ErrGUID = errors.New("notify: invalid GUID format")
+	ErrIcon = errors.New("notify: unknown icon type")
 )
 
 const className = "go.notify.Window"
@@ -717,5 +717,5 @@ type MenuEvent struct {
 type VersionError string
 
 func (e VersionError) Error() string {
-	return fmt.Sprintf("go.notify: require Windows %v or later", string(e))
+	return fmt.Sprintf("notify: require Windows %v or later", string(e))
 }

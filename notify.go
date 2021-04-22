@@ -1,7 +1,7 @@
 //
 // go.notify :: notify.go
 //
-//   Copyright (c) 2017-2019 Akinori Hattori <hattya@gmail.com>
+//   Copyright (c) 2017-2021 Akinori Hattori <hattya@gmail.com>
 //
 //   SPDX-License-Identifier: MIT
 //
@@ -11,7 +11,7 @@ package notify
 
 import "errors"
 
-var ErrEvent = errors.New("go.notify: unknown event")
+var ErrEvent = errors.New("notify: unknown event")
 
 // Icon represents an icon. Its value is dependent on each implementation.
 type Icon interface{}

@@ -1,7 +1,7 @@
 //
 // go.notify/gntp :: gntp.go
 //
-//   Copyright (c) 2017-2020 Akinori Hattori <hattya@gmail.com>
+//   Copyright (c) 2017-2021 Akinori Hattori <hattya@gmail.com>
 //
 //   SPDX-License-Identifier: MIT
 //
@@ -46,12 +46,12 @@ import (
 )
 
 var (
-	ErrProtocol   = errors.New("go.notify: protocol error")
-	ErrHash       = errors.New("go.notify: unknown hash algorithm")
-	ErrEncryption = errors.New("go.notify: unknown encryption algorithm")
-	ErrKeyLength  = errors.New("go.notify: key length is too short")
-	ErrPassword   = errors.New("go.notify: incorrect password")
-	ErrPKCS7      = errors.New("go.notify: invalid PKCS #7 padding")
+	ErrProtocol   = errors.New("notify: protocol error")
+	ErrHash       = errors.New("notify: unknown hash algorithm")
+	ErrEncryption = errors.New("notify: unknown encryption algorithm")
+	ErrKeyLength  = errors.New("notify: key length is too short")
+	ErrPassword   = errors.New("notify: incorrect password")
+	ErrPKCS7      = errors.New("notify: invalid PKCS #7 padding")
 )
 
 const rfc3339 = "2006-01-02 15:04:05Z"
