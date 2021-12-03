@@ -33,6 +33,6 @@ go.notify is distributed under the terms of the MIT License.
 
 ## Credits
 
-The [Go gopher](https://blog.golang.org/gopher) was designed by [Renne French](https://reneefrench.blogspot.com/).
+The [Go gopher](https://go.dev/blog/gopher) was designed by [Renne French](https://reneefrench.blogspot.com/).
 
 [![CC BY 3.0](https://i.creativecommons.org/l/by/3.0/80x15.png)](https://creativecommons.org/licenses/by/3.0/)
