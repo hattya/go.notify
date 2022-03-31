@@ -1,7 +1,7 @@
 //
 // go.notify/gntp :: gntp_test.go
 //
-//   Copyright (c) 2017-2019 Akinori Hattori <hattya@gmail.com>
+//   Copyright (c) 2017-2022 Akinori Hattori <hattya@gmail.com>
 //
 //   SPDX-License-Identifier: MIT
 //
@@ -16,9 +16,9 @@ import (
 	"fmt"
 	"image"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/textproto"
+	"os"
 	"path/filepath"
 	"reflect"
 	"strconv"
@@ -86,7 +86,7 @@ func TestRegister(t *testing.T) {
 	}
 	// icon
 	url := "https://example.com/gopher.png"
-	b, err := ioutil.ReadFile(filepath.Join("..", "gopher.png"))
+	b, err := os.ReadFile(filepath.Join("..", "gopher.png"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -289,7 +289,7 @@ func TestNotify(t *testing.T) {
 	}
 	// icon
 	url := "https://example.com/gopher.png"
-	b, err := ioutil.ReadFile(filepath.Join("..", "gopher.png"))
+	b, err := os.ReadFile(filepath.Join("..", "gopher.png"))
 	if err != nil {
 		t.Fatal(err)
 	}

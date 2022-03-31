@@ -16,7 +16,7 @@ aster.watch(/.+\.go$/, function(files) {
   go.mod.tidy();
   // go test for each package
   var bad = go_.packagesOf(files).some(function(p) {
-    return go.test('-v', '-race', '-covermode', 'atomic', '-coverprofile', p + '/cover.out', p);
+    return go.test('-v', '-race', '-coverprofile', p + '/cover.out', p);
   });
   // combine coverage profiles
   if (!bad) {

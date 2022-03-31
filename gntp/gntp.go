@@ -1,7 +1,7 @@
 //
 // go.notify/gntp :: gntp.go
 //
-//   Copyright (c) 2017-2021 Akinori Hattori <hattya@gmail.com>
+//   Copyright (c) 2017-2022 Akinori Hattori <hattya@gmail.com>
 //
 //   SPDX-License-Identifier: MIT
 //
@@ -33,7 +33,6 @@ import (
 	"image"
 	"image/png"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/textproto"
 	"reflect"
@@ -530,7 +529,7 @@ func (b *buffer) Icon(value interface{}) (id string, err error) {
 		return b.uniqueid(w.Bytes())
 	case io.Reader:
 		var data []byte
-		data, err = ioutil.ReadAll(v)
+		data, err = io.ReadAll(v)
 		if err != nil {
 			return
 		}
@@ -546,7 +545,7 @@ func (b *buffer) Resource(value interface{}) (string, error) {
 	case []byte:
 		return b.uniqueid(v)
 	case io.Reader:
-		data, err := ioutil.ReadAll(v)
+		data, err := io.ReadAll(v)
 		if err != nil {
 			return "", err
 		}

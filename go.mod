@@ -1,6 +1,6 @@
 module github.com/hattya/go.notify
 
-go 1.15
+go 1.16
 
 require (
 	github.com/godbus/dbus/v5 v5.1.0
