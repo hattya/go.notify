@@ -1,7 +1,7 @@
 //
 // go.notify/internal/sys :: syscall_windows.go
 //
-//   Copyright (c) 2017-2020 Akinori Hattori <hattya@gmail.com>
+//   Copyright (c) 2017-2022 Akinori Hattori <hattya@gmail.com>
 //
 //   SPDX-License-Identifier: MIT
 //
@@ -11,6 +11,7 @@
 package sys
 
 import (
+	"syscall"
 	"unsafe"
 
 	"golang.org/x/sys/windows"
@@ -78,9 +79,34 @@ func LoWord(v uint32) uint16 {
 	return uint16(v & 0xffff)
 }
 
+var (
+	procVerifyVersionInfoW  = modkernel32.NewProc("VerifyVersionInfoW")
+	procVerSetConditionMask = modkernel32.NewProc("VerSetConditionMask")
+)
+
+func VerifyVersionInfo(vi *OSVersionInfoEx, typeMask uint32, conditionMask uint64) (ok bool) {
+	if unsafe.Sizeof(uintptr(0)) == 8 {
+		r0, _, _ := syscall.Syscall(procVerifyVersionInfoW.Addr(), 3, uintptr(unsafe.Pointer(vi)), uintptr(typeMask), uintptr(conditionMask))
+		ok = r0 != 0
+	} else {
+		r0, _, _ := syscall.Syscall6(procVerifyVersionInfoW.Addr(), 4, uintptr(unsafe.Pointer(vi)), uintptr(typeMask), uintptr(conditionMask), uintptr(conditionMask>>32), 0, 0)
+		ok = r0 != 0
+	}
+	return
+}
+
+func VerSetConditionMask(lConditionMask uint64, typeBitMask uint32, conditionMask uint8) (mask uint64) {
+	if unsafe.Sizeof(uintptr(0)) == 8 {
+		r0, _, _ := syscall.Syscall(procVerSetConditionMask.Addr(), 3, uintptr(lConditionMask), uintptr(typeBitMask), uintptr(conditionMask))
+		mask = uint64(r0)
+	} else {
+		r1, r2, _ := syscall.Syscall6(procVerSetConditionMask.Addr(), 4, uintptr(lConditionMask), uintptr(lConditionMask>>32), uintptr(typeBitMask), uintptr(conditionMask), 0, 0)
+		mask = uint64(r1) | uint64(r2)<<32
+	}
+	return
+}
+
 //sys	GetModuleHandle(name *uint16) (h windows.Handle, err error) = GetModuleHandleW
-//sys	VerifyVersionInfo(vi *OSVersionInfoEx, typeMask uint32, conditionMask uint64) (ok bool) = VerifyVersionInfoW
-//sys	VerSetConditionMask(lConditionMask uint64, typeBitMask uint32, conditionMask uint8) (mask uint64)
 
 const GWL_USERDATA = -21
 
@@ -94,8 +120,6 @@ const (
 	LR_DEFAULTSIZE = 0x00000040
 	LR_SHARED      = 0x00008000
 )
-
-const OIC_SAMPLE = 32512
 
 const (
 	MF_STRING    = 0x00000000

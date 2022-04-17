@@ -350,6 +350,8 @@ func (ni *NotifyIcon) message() {
 		sys.TranslateMessage(&msg)
 		sys.DispatchMessage(&msg)
 	}
+	// workaround for go1.18+ windows/386
+	runtime.KeepAlive(msg)
 }
 
 func (ni *NotifyIcon) windowProc(wnd windows.Handle, msg uint32, wParam, lParam uintptr) uintptr {

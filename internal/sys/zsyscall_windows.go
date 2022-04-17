@@ -50,8 +50,6 @@ var (
 	procSelectObject           = modgdi32.NewProc("SelectObject")
 	procSetPixel               = modgdi32.NewProc("SetPixel")
 	procGetModuleHandleW       = modkernel32.NewProc("GetModuleHandleW")
-	procVerSetConditionMask    = modkernel32.NewProc("VerSetConditionMask")
-	procVerifyVersionInfoW     = modkernel32.NewProc("VerifyVersionInfoW")
 	procShell_NotifyIconW      = modshell32.NewProc("Shell_NotifyIconW")
 	procAppendMenuW            = moduser32.NewProc("AppendMenuW")
 	procCreateIconIndirect     = moduser32.NewProc("CreateIconIndirect")
@@ -137,18 +135,6 @@ func GetModuleHandle(name *uint16) (h windows.Handle, err error) {
 	if h == 0 {
 		err = errnoErr(e1)
 	}
-	return
-}
-
-func VerSetConditionMask(lConditionMask uint64, typeBitMask uint32, conditionMask uint8) (mask uint64) {
-	r0, _, _ := syscall.Syscall(procVerSetConditionMask.Addr(), 3, uintptr(lConditionMask), uintptr(typeBitMask), uintptr(conditionMask))
-	mask = uint64(r0)
-	return
-}
-
-func VerifyVersionInfo(vi *OSVersionInfoEx, typeMask uint32, conditionMask uint64) (ok bool) {
-	r0, _, _ := syscall.Syscall(procVerifyVersionInfoW.Addr(), 3, uintptr(unsafe.Pointer(vi)), uintptr(typeMask), uintptr(conditionMask))
-	ok = r0 != 0
 	return
 }
 
