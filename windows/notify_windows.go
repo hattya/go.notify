@@ -1,7 +1,7 @@
 //
 // go.notify/windows :: notify_windows.go
 //
-//   Copyright (c) 2017-2021 Akinori Hattori <hattya@gmail.com>
+//   Copyright (c) 2017-2022 Akinori Hattori <hattya@gmail.com>
 //
 //   SPDX-License-Identifier: MIT
 //
@@ -369,7 +369,9 @@ func (ni *NotifyIcon) windowProc(wnd windows.Handle, msg uint32, wParam, lParam 
 	case sys.WM_USER:
 		switch sys.LoWord(uint32(lParam)) {
 		case sys.WM_RBUTTONUP:
-			sys.PostMessage(wnd, sys.WM_CONTEXTMENU, 0, 0)
+			if ni.menu != nil {
+				sys.PostMessage(wnd, sys.WM_CONTEXTMENU, 0, 0)
+			}
 		case sys.NIN_BALLOONSHOW:
 			ni.ev <- BalloonShown
 		case sys.NIN_BALLOONHIDE:
