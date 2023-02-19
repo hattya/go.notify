@@ -1,7 +1,7 @@
 //
 // go.notify/internal/sys :: syscall_windows.go
 //
-//   Copyright (c) 2017-2022 Akinori Hattori <hattya@gmail.com>
+//   Copyright (c) 2017-2023 Akinori Hattori <hattya@gmail.com>
 //
 //   SPDX-License-Identifier: MIT
 //
@@ -86,10 +86,10 @@ var (
 
 func VerifyVersionInfo(vi *OSVersionInfoEx, typeMask uint32, conditionMask uint64) (ok bool) {
 	if unsafe.Sizeof(uintptr(0)) == 8 {
-		r0, _, _ := syscall.Syscall(procVerifyVersionInfoW.Addr(), 3, uintptr(unsafe.Pointer(vi)), uintptr(typeMask), uintptr(conditionMask))
+		r0, _, _ := syscall.SyscallN(procVerifyVersionInfoW.Addr(), uintptr(unsafe.Pointer(vi)), uintptr(typeMask), uintptr(conditionMask))
 		ok = r0 != 0
 	} else {
-		r0, _, _ := syscall.Syscall6(procVerifyVersionInfoW.Addr(), 4, uintptr(unsafe.Pointer(vi)), uintptr(typeMask), uintptr(conditionMask), uintptr(conditionMask>>32), 0, 0)
+		r0, _, _ := syscall.SyscallN(procVerifyVersionInfoW.Addr(), uintptr(unsafe.Pointer(vi)), uintptr(typeMask), uintptr(conditionMask), uintptr(conditionMask>>32))
 		ok = r0 != 0
 	}
 	return
@@ -97,10 +97,10 @@ func VerifyVersionInfo(vi *OSVersionInfoEx, typeMask uint32, conditionMask uint6
 
 func VerSetConditionMask(lConditionMask uint64, typeBitMask uint32, conditionMask uint8) (mask uint64) {
 	if unsafe.Sizeof(uintptr(0)) == 8 {
-		r0, _, _ := syscall.Syscall(procVerSetConditionMask.Addr(), 3, uintptr(lConditionMask), uintptr(typeBitMask), uintptr(conditionMask))
+		r0, _, _ := syscall.SyscallN(procVerSetConditionMask.Addr(), uintptr(lConditionMask), uintptr(typeBitMask), uintptr(conditionMask))
 		mask = uint64(r0)
 	} else {
-		r1, r2, _ := syscall.Syscall6(procVerSetConditionMask.Addr(), 4, uintptr(lConditionMask), uintptr(lConditionMask>>32), uintptr(typeBitMask), uintptr(conditionMask), 0, 0)
+		r1, r2, _ := syscall.SyscallN(procVerSetConditionMask.Addr(), uintptr(lConditionMask), uintptr(lConditionMask>>32), uintptr(typeBitMask), uintptr(conditionMask))
 		mask = uint64(r1) | uint64(r2)<<32
 	}
 	return
