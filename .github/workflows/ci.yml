@@ -11,9 +11,9 @@ jobs:
           - macOS
           - Windows
         go-version:
-          - '1.19'
           - '1.20'
           - '1.21'
+          - '1.22'
         architecture:
           - 386
           - amd64
