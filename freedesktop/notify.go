@@ -1,7 +1,7 @@
 //
 // go.notify/freedesktop :: notify.go
 //
-//   Copyright (c) 2017-2020 Akinori Hattori <hattya@gmail.com>
+//   Copyright (c) 2017-2024 Akinori Hattori <hattya@gmail.com>
 //
 //   SPDX-License-Identifier: MIT
 //
@@ -193,6 +193,7 @@ func (c *Client) signal() {
 
 	var closed chan NotificationClosed
 	var invoked chan ActionInvoked
+	var closedIdx, invokedIdx int
 	closedBuf := make([]NotificationClosed, 1)
 	invokedBuf := make([]ActionInvoked, 1)
 
@@ -204,7 +205,7 @@ func (c *Client) signal() {
 				case notificationClosed:
 					if closed == nil {
 						closed = c.NotificationClosed
-						closedBuf = closedBuf[1:]
+						closedIdx = 1
 					}
 					closedBuf = append(closedBuf, NotificationClosed{
 						ID:     sig.Body[0].(uint32),
@@ -213,7 +214,7 @@ func (c *Client) signal() {
 				case actionInvoked:
 					if invoked == nil {
 						invoked = c.ActionInvoked
-						invokedBuf = invokedBuf[1:]
+						invokedIdx = 1
 					}
 					invokedBuf = append(invokedBuf, ActionInvoked{
 						ID:  sig.Body[0].(uint32),
@@ -221,17 +222,21 @@ func (c *Client) signal() {
 					})
 				}
 			}
-		case closed <- closedBuf[0]:
-			if len(closedBuf) == 1 {
+		case closed <- closedBuf[closedIdx]:
+			if closedIdx == len(closedBuf)-1 {
 				closed = nil
+				closedIdx = 0
+				closedBuf = closedBuf[:1]
 			} else {
-				closedBuf = closedBuf[1:]
+				closedIdx++
 			}
-		case invoked <- invokedBuf[0]:
-			if len(invokedBuf) == 1 {
+		case invoked <- invokedBuf[invokedIdx]:
+			if invokedIdx == len(invokedBuf)-1 {
 				invoked = nil
+				invokedIdx = 0
+				invokedBuf = invokedBuf[:1]
 			} else {
-				invokedBuf = invokedBuf[1:]
+				invokedIdx++
 			}
 		case <-c.done:
 			for _, sig := range []string{notificationClosed, actionInvoked} {
