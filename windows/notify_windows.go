@@ -1,7 +1,7 @@
 //
 // go.notify/windows :: notify_windows.go
 //
-//   Copyright (c) 2017-2022 Akinori Hattori <hattya@gmail.com>
+//   Copyright (c) 2017-2024 Akinori Hattori <hattya@gmail.com>
 //
 //   SPDX-License-Identifier: MIT
 //
@@ -286,6 +286,7 @@ func (ni *NotifyIcon) event() {
 
 	var balloon chan BalloonEvent
 	var menu chan MenuEvent
+	var balloonIdx, menuIdx int
 	balloonBuf := make([]BalloonEvent, 1)
 	menuBuf := make([]MenuEvent, 1)
 
@@ -296,27 +297,31 @@ func (ni *NotifyIcon) event() {
 			case BalloonEvent:
 				if balloon == nil {
 					balloon = ni.Balloon
-					balloonBuf = balloonBuf[1:]
+					balloonIdx = 1
 				}
 				balloonBuf = append(balloonBuf, ev)
 			case MenuEvent:
 				if menu == nil {
 					menu = ni.Menu
-					menuBuf = menuBuf[1:]
+					menuIdx = 1
 				}
 				menuBuf = append(menuBuf, ev)
 			}
-		case balloon <- balloonBuf[0]:
-			if len(balloonBuf) == 1 {
+		case balloon <- balloonBuf[balloonIdx]:
+			if balloonIdx == len(balloonBuf)-1 {
 				balloon = nil
+				balloonIdx = 0
+				balloonBuf = balloonBuf[:1]
 			} else {
-				balloonBuf = balloonBuf[1:]
+				balloonIdx++
 			}
-		case menu <- menuBuf[0]:
-			if len(menuBuf) == 1 {
+		case menu <- menuBuf[menuIdx]:
+			if menuIdx == len(menuBuf)-1 {
 				menu = nil
+				menuIdx = 0
+				menuBuf = menuBuf[:1]
 			} else {
-				menuBuf = menuBuf[1:]
+				menuIdx++
 			}
 		case <-ni.done:
 			return
