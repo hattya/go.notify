@@ -17,18 +17,26 @@ jobs:
         architecture:
           - 386
           - amd64
+          - arm64
         include:
           - platform: Linux
             os: ubuntu-latest
           - platform: macOS
             os: macos-latest
+          - platform: macOS
+            os: macos-13
+            architecture: amd64
           - platform: Windows
             os: windows-latest
         exclude:
           - platform: Linux
             architecture: 386
+          - platform: Linux
+            architecture: arm64
           - platform: macOS
             architecture: 386
+          - platform: Windows
+            architecture: arm64
       fail-fast: false
     name: Go ${{ matrix.go-version }} (${{ matrix.architecture }}) on ${{ matrix.platform }}
     runs-on: ${{ matrix.os }}
@@ -46,8 +54,8 @@ jobs:
       - name: Test (386)
         if: matrix.architecture == '386'
         run: go test -v -coverprofile coverage.txt ./...
-      - name: Test (amd64)
-        if: matrix.architecture == 'amd64'
+      - name: Test (amd64/arm64)
+        if: matrix.architecture != '386'
         run: go test -v -race -coverprofile coverage.txt ./...
       - name: Vet
         run: go vet -unsafeptr=false ./...
