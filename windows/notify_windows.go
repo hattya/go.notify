@@ -1,7 +1,7 @@
 //
 // go.notify/windows :: notify_windows.go
 //
-//   Copyright (c) 2017-2024 Akinori Hattori <hattya@gmail.com>
+//   Copyright (c) 2017-2025 Akinori Hattori <hattya@gmail.com>
 //
 //   SPDX-License-Identifier: MIT
 //
@@ -502,15 +502,15 @@ func LoadImage(img image.Image) (icon *Icon, err error) {
 
 	switch img := img.(type) {
 	case *image.Gray:
-		for y := 0; y < size.Y; y++ {
-			for x := 0; x < size.X; x++ {
+		for y := range size.Y {
+			for x := range size.X {
 				c := img.GrayAt(x, y)
 				sys.SetPixel(mdc2, int32(x), int32(y), sys.RGB(c.Y, c.Y, c.Y))
 			}
 		}
 	case *image.NRGBA:
-		for y := 0; y < size.Y; y++ {
-			for x := 0; x < size.X; x++ {
+		for y := range size.Y {
+			for x := range size.X {
 				c := img.NRGBAAt(x, y)
 				a := 255 - c.A
 				sys.SetPixel(mdc1, int32(x), int32(y), sys.RGB(a, a, a))

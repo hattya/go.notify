@@ -1,7 +1,7 @@
 //
 // go.notify/gntp :: mock_test.go
 //
-//   Copyright (c) 2017-2020 Akinori Hattori <hattya@gmail.com>
+//   Copyright (c) 2017-2025 Akinori Hattori <hattya@gmail.com>
 //
 //   SPDX-License-Identifier: MIT
 //
@@ -221,7 +221,7 @@ func (s *Server) handle(conn net.Conn) {
 		blob = s.numBlob(i, r)
 	}
 	// identifiers
-	for i := 0; i < blob; i++ {
+	for range blob {
 		hdr, err := r.ReadMIMEHeader()
 		if err != nil {
 			panic(err)

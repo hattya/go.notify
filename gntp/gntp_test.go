@@ -1,7 +1,7 @@
 //
 // go.notify/gntp :: gntp_test.go
 //
-//   Copyright (c) 2017-2022 Akinori Hattori <hattya@gmail.com>
+//   Copyright (c) 2017-2025 Akinori Hattori <hattya@gmail.com>
 //
 //   SPDX-License-Identifier: MIT
 //
@@ -487,7 +487,7 @@ func TestCallback(t *testing.T) {
 		gntp.TDES,
 		gntp.AES,
 	} {
-		for i := 0; i < 10; i++ {
+		for i := range 10 {
 			if ea != gntp.NONE {
 				s.SetPassword(password)
 				c.Password = password
@@ -587,7 +587,7 @@ func TestCallbackError(t *testing.T) {
 		fmt.Fprintf(conn, "%v\r\n", i)
 		bs := i.Cipher().BlockSize()
 		src := make([]byte, bs)
-		for i := 0; i < len(src); i++ {
+		for i := range len(src) {
 			src[i] = byte(i % (bs / 2))
 		}
 		conn.Write(encrypt(i, src))
@@ -721,7 +721,7 @@ func TestResponse(t *testing.T) {
 		fmt.Fprintf(conn, "%v\r\n", i)
 		bs := i.Cipher().BlockSize()
 		src := make([]byte, bs)
-		for i := 0; i < len(src); i++ {
+		for i := range len(src) {
 			src[i] = byte(i % (bs / 2))
 		}
 		conn.Write(encrypt(i, src))
@@ -849,7 +849,7 @@ func TestDecrypt(t *testing.T) {
 		t.Errorf("expected ErrPKCS7, got %v", err)
 	}
 	src = make([]byte, bs)
-	for i := 0; i < len(src); i++ {
+	for i := range len(src) {
 		src[i] = byte(i % (bs / 2))
 	}
 	if _, err := i.Decrypt(encrypt(i, src)); err != gntp.ErrPKCS7 {

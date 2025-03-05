@@ -1,7 +1,7 @@
 //
 // go.notify/freedesktop :: notify_test.go
 //
-//   Copyright (c) 2017-2020 Akinori Hattori <hattya@gmail.com>
+//   Copyright (c) 2017-2025 Akinori Hattori <hattya@gmail.com>
 //
 //   SPDX-License-Identifier: MIT
 //
@@ -58,7 +58,7 @@ func TestClose(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		if err := c.Close(); err != nil {
 			t.Fatal(err)
 		}

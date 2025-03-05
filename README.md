@@ -21,7 +21,7 @@ implementations:
 ## Installation
 
 ```console
-$ go get -u github.com/hattya/go.notify
+$ go get github.com/hattya/go.notify
 ```
 
 
