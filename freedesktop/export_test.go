@@ -1,7 +1,7 @@
 //
 // go.notify/freedesktop :: export_test.go
 //
-//   Copyright (c) 2017-2021 Akinori Hattori <hattya@gmail.com>
+//   Copyright (c) 2017-2025 Akinori Hattori <hattya@gmail.com>
 //
 //   SPDX-License-Identifier: MIT
 //
@@ -64,19 +64,19 @@ type object struct {
 	n     int
 }
 
-func (o *object) Call(method string, flags dbus.Flags, args ...interface{}) *dbus.Call {
+func (o *object) Call(method string, flags dbus.Flags, args ...any) *dbus.Call {
 	return o.GoWithContext(context.Background(), method, flags, nil, args...)
 }
 
-func (o *object) CallWithContext(ctx context.Context, method string, flags dbus.Flags, args ...interface{}) *dbus.Call {
+func (o *object) CallWithContext(ctx context.Context, method string, flags dbus.Flags, args ...any) *dbus.Call {
 	return o.GoWithContext(ctx, method, flags, nil, args...)
 }
 
-func (o *object) Go(method string, flags dbus.Flags, ch chan *dbus.Call, args ...interface{}) *dbus.Call {
+func (o *object) Go(method string, flags dbus.Flags, ch chan *dbus.Call, args ...any) *dbus.Call {
 	return o.GoWithContext(context.Background(), method, flags, ch, args...)
 }
 
-func (o *object) GoWithContext(ctx context.Context, method string, flags dbus.Flags, ch chan *dbus.Call, args ...interface{}) *dbus.Call {
+func (o *object) GoWithContext(ctx context.Context, method string, flags dbus.Flags, ch chan *dbus.Call, args ...any) *dbus.Call {
 	if len(o.calls) <= o.n {
 		return &dbus.Call{Err: dbus.ErrClosed}
 	}
@@ -99,7 +99,7 @@ func (o *object) RemoveMatchSignal(iface, member string, options ...dbus.MatchOp
 }
 
 func (o *object) GetProperty(string) (dbus.Variant, error) { return dbus.Variant{}, nil }
-func (o *object) StoreProperty(string, interface{}) error  { return nil }
-func (o *object) SetProperty(string, interface{}) error    { return nil }
+func (o *object) StoreProperty(string, any) error          { return nil }
+func (o *object) SetProperty(string, any) error            { return nil }
 func (o *object) Destination() string                      { return o.dest }
 func (o *object) Path() dbus.ObjectPath                    { return o.path }

@@ -1,7 +1,7 @@
 //
 // go.notify/gntp :: gntp.go
 //
-//   Copyright (c) 2017-2022 Akinori Hattori <hattya@gmail.com>
+//   Copyright (c) 2017-2025 Akinori Hattori <hattya@gmail.com>
 //
 //   SPDX-License-Identifier: MIT
 //
@@ -65,7 +65,7 @@ type Client struct {
 	EncryptionAlgorithm EncryptionAlgorithm
 
 	// Custom Headers and App-Specific Headers
-	Header map[string]interface{}
+	Header map[string]any
 
 	Callback chan *Callback
 	wg       sync.WaitGroup // for testing
@@ -81,7 +81,7 @@ func New() *Client {
 	ctx, cancel := context.WithCancel(context.Background())
 	return &Client{
 		Server:   "localhost:23053",
-		Header:   make(map[string]interface{}),
+		Header:   make(map[string]any),
 		Callback: make(chan *Callback),
 		cb:       make(map[net.Conn]struct{}),
 		ctx:      ctx,
@@ -389,7 +389,7 @@ func (c *Client) callback(ctx context.Context, conn net.Conn, br *bufio.Reader) 
 //   - []byte
 //   - image.Image
 //   - io.Reader
-type Icon interface{}
+type Icon any
 
 // HashAlgorithm represents a hash algorithm of the GNTP protocol.
 type HashAlgorithm int
@@ -502,14 +502,14 @@ func (b *buffer) CRLF() {
 	b.WriteString("\r\n")
 }
 
-func (b *buffer) Header(key string, value interface{}) {
+func (b *buffer) Header(key string, value any) {
 	if s, ok := value.(string); ok {
 		value = sanitizer.Replace(s)
 	}
 	fmt.Fprintf(b, "%v: %v\r\n", key, value)
 }
 
-func (b *buffer) Icon(value interface{}) (id string, err error) {
+func (b *buffer) Icon(value any) (id string, err error) {
 	switch v := value.(type) {
 	case nil:
 	case string:
@@ -540,7 +540,7 @@ func (b *buffer) Icon(value interface{}) (id string, err error) {
 	return
 }
 
-func (b *buffer) Resource(value interface{}) (string, error) {
+func (b *buffer) Resource(value any) (string, error) {
 	switch v := value.(type) {
 	case []byte:
 		return b.uniqueid(v)

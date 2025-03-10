@@ -1,7 +1,7 @@
 //
 // go.notify/windows :: impl_windows_test.go
 //
-//   Copyright (c) 2017-2020 Akinori Hattori <hattya@gmail.com>
+//   Copyright (c) 2017-2025 Akinori Hattori <hattya@gmail.com>
 //
 //   SPDX-License-Identifier: MIT
 //
@@ -74,7 +74,7 @@ func TestNotifierRegister(t *testing.T) {
 
 	// windows:fallback-icon
 	windows.MockShellDLLVersion(6, 0, 0)
-	opts := map[string]interface{}{
+	opts := map[string]any{
 		"windows:fallback-icon": windows.IconInfo,
 	}
 	if err := n.Register("event", icon, opts); err != nil {
@@ -82,7 +82,7 @@ func TestNotifierRegister(t *testing.T) {
 	}
 	// error
 	windows.MockShellDLLVersion(6, 0, 0)
-	opts = map[string]interface{}{
+	opts = map[string]any{
 		"windows:fallback-icon": 1,
 	}
 	if err := n.Register("event", icon, opts); err == nil {
@@ -90,21 +90,21 @@ func TestNotifierRegister(t *testing.T) {
 	}
 
 	// windows:sound
-	opts = map[string]interface{}{
+	opts = map[string]any{
 		"windows:sound": false,
 	}
 	if err := n.Register("event", nil, opts); err != nil {
 		t.Error(err)
 	}
 	windows.MockShellDLLVersion(5, 0, 0)
-	opts = map[string]interface{}{
+	opts = map[string]any{
 		"windows:sound": false,
 	}
 	if err := n.Register("event", nil, opts); err != nil {
 		t.Error(err)
 	}
 	// error
-	opts = map[string]interface{}{
+	opts = map[string]any{
 		"windows:sound": 1,
 	}
 	if err := n.Register("event", nil, opts); err == nil {
@@ -119,7 +119,7 @@ func TestNotifierNotify(t *testing.T) {
 	}
 	defer n.Close()
 
-	opts := map[string]interface{}{
+	opts := map[string]any{
 		"windows:sound": false,
 	}
 	if err := n.Register("event", windows.IconInfo, opts); err != nil {

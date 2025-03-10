@@ -1,7 +1,7 @@
 //
 // go.notify/gntp :: impl_test.go
 //
-//   Copyright (c) 2017-2019 Akinori Hattori <hattya@gmail.com>
+//   Copyright (c) 2017-2025 Akinori Hattori <hattya@gmail.com>
 //
 //   SPDX-License-Identifier: MIT
 //
@@ -34,7 +34,7 @@ func TestNotifierRegister(t *testing.T) {
 	n := gntp.NewNotifier(c)
 	defer n.Close()
 
-	for _, opts := range []map[string]interface{}{
+	for _, opts := range []map[string]any{
 		{"gntp:display-name": "Display Name"},
 		{"gntp:enabled": true},
 		{"gntp:sticky": true},
@@ -55,7 +55,7 @@ func TestNotifierRegister(t *testing.T) {
 		}
 	}
 	// error
-	for _, opts := range []map[string]interface{}{
+	for _, opts := range []map[string]any{
 		{"gntp:display-name": nil},
 		{"gntp:enabled": nil},
 		{"gntp:sticky": nil},

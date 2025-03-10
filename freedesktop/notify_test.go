@@ -97,7 +97,7 @@ func TestGetCapabilities(t *testing.T) {
 
 	e := []string{"body", "persistence", "sound"}
 	c.ResetMock()
-	c.MockMethodCall(&dbus.Call{Body: []interface{}{e}})
+	c.MockMethodCall(&dbus.Call{Body: []any{e}})
 	caps, err := c.GetCapabilities()
 	if err != nil {
 		t.Fatal(err)
@@ -162,7 +162,7 @@ func TestNotify(t *testing.T) {
 
 	for _, tt := range []struct {
 		name  string
-		value interface{}
+		value any
 	}{
 		{"image-data", image.NewGray(image.Rect(0, 0, 48, 48))},
 		{"image-path", "path"},
@@ -171,7 +171,7 @@ func TestNotify(t *testing.T) {
 			rv := uint32(1)
 			c.ResetMock()
 			c.MockMethodCall(&dbus.Call{Body: newServer(ver)})
-			c.MockMethodCall(&dbus.Call{Body: []interface{}{rv}})
+			c.MockMethodCall(&dbus.Call{Body: []any{rv}})
 			n := new(freedesktop.Notification)
 			n.Action("default", "Default")
 			if err := n.Hint(tt.name, tt.value); err != nil {
@@ -219,8 +219,8 @@ func TestNotify(t *testing.T) {
 	}
 }
 
-func newServer(ver string) []interface{} {
-	return []interface{}{"go.notify", "", "0.0", ver}
+func newServer(ver string) []any {
+	return []any{"go.notify", "", "0.0", ver}
 }
 
 func TestNotificationClosed(t *testing.T) {
@@ -233,7 +233,7 @@ func TestNotificationClosed(t *testing.T) {
 	for i := uint32(1); i < 5; i++ {
 		c.MockSignal(&dbus.Signal{
 			Name: "NotificationClosed",
-			Body: []interface{}{i, i},
+			Body: []any{i, i},
 		})
 	}
 	for i := uint32(1); i < 5; i++ {
@@ -273,7 +273,7 @@ func TestActionInvoked(t *testing.T) {
 	for i := uint32(1); i < 5; i++ {
 		c.MockSignal(&dbus.Signal{
 			Name: "ActionInvoked",
-			Body: []interface{}{i, "key"},
+			Body: []any{i, "key"},
 		})
 	}
 	for i := uint32(1); i < 5; i++ {
@@ -314,7 +314,7 @@ func TestHint_ImageData(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		e := map[string]interface{}{
+		e := map[string]any{
 			"image-data": data,
 		}
 		// >= 1.2
@@ -350,7 +350,7 @@ func TestHint_ImageData(t *testing.T) {
 }
 
 func TestHint_ImagePath(t *testing.T) {
-	e := map[string]interface{}{
+	e := map[string]any{
 		"image-path": "path",
 	}
 	var n freedesktop.Notification
@@ -380,11 +380,11 @@ func TestHint_Y(t *testing.T) {
 }
 
 func testHint_i(t *testing.T, name string) {
-	e := map[string]interface{}{
+	e := map[string]any{
 		name: int32(1),
 	}
 
-	for _, v := range []interface{}{
+	for _, v := range []any{
 		int(1),
 		int8(1),
 		int16(1),
@@ -405,7 +405,7 @@ func testHint_i(t *testing.T, name string) {
 		}
 	}
 
-	for _, v := range []interface{}{
+	for _, v := range []any{
 		int64(math.MaxInt32 + 1),
 		uint64(math.MaxUint32 + 1),
 		float32(1),
@@ -420,11 +420,11 @@ func testHint_i(t *testing.T, name string) {
 }
 
 func TestHint_Urgency(t *testing.T) {
-	e := map[string]interface{}{
+	e := map[string]any{
 		"urgency": uint8(1),
 	}
 
-	for _, v := range []interface{}{
+	for _, v := range []any{
 		int(1),
 		int8(1),
 		int16(1),
@@ -445,7 +445,7 @@ func TestHint_Urgency(t *testing.T) {
 		}
 	}
 
-	for _, v := range []interface{}{
+	for _, v := range []any{
 		int64(math.MaxUint8 + 1),
 		uint64(math.MaxUint8 + 1),
 		float32(1),

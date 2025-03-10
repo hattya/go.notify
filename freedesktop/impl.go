@@ -1,7 +1,7 @@
 //
 // go.notify/freedesktop :: impl.go
 //
-//   Copyright (c) 2017-2019 Akinori Hattori <hattya@gmail.com>
+//   Copyright (c) 2017-2025 Akinori Hattori <hattya@gmail.com>
 //
 //   SPDX-License-Identifier: MIT
 //
@@ -29,7 +29,7 @@ type notifier struct {
 //
 // Register accepts following keys and value types:
 //   - freedesktop:actions map[string]string
-//   - freedesktop:hints   map[string]interface{}
+//   - freedesktop:hints   map[string]any
 //   - freedesktop:timeout int32
 func NewNotifier(name string) (notify.Notifier, error) {
 	c, err := New()
@@ -47,7 +47,7 @@ func (p *notifier) Close() error {
 	return p.c.Close()
 }
 
-func (p *notifier) Register(event string, icon notify.Icon, opts map[string]interface{}) error {
+func (p *notifier) Register(event string, icon notify.Icon, opts map[string]any) error {
 	n := &Notification{Timeout: -1}
 	switch icon := icon.(type) {
 	case nil:
@@ -72,14 +72,14 @@ func (p *notifier) Register(event string, icon notify.Icon, opts map[string]inte
 	}
 	k = "freedesktop:hints"
 	if v, ok := opts[k]; ok {
-		if m, ok := v.(map[string]interface{}); ok {
+		if m, ok := v.(map[string]any); ok {
 			for k, v := range m {
 				if err := n.Hint(k, v); err != nil {
 					return err
 				}
 			}
 		} else {
-			return fmt.Errorf("%q expects map[string]interface{}: %T", k, v)
+			return fmt.Errorf("%q expects map[string]any: %T", k, v)
 		}
 	}
 	k = "freedesktop:timeout"
@@ -108,6 +108,6 @@ func (p *notifier) Notify(event, title, body string) error {
 	return err
 }
 
-func (p *notifier) Sys() interface{} {
+func (p *notifier) Sys() any {
 	return p.c
 }

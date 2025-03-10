@@ -1,7 +1,7 @@
 //
 // go.notify :: notify.go
 //
-//   Copyright (c) 2017-2021 Akinori Hattori <hattya@gmail.com>
+//   Copyright (c) 2017-2025 Akinori Hattori <hattya@gmail.com>
 //
 //   SPDX-License-Identifier: MIT
 //
@@ -14,7 +14,7 @@ import "errors"
 var ErrEvent = errors.New("notify: unknown event")
 
 // Icon represents an icon. Its value is dependent on each implementation.
-type Icon interface{}
+type Icon any
 
 // Notifier is an interface for notifications.
 type Notifier interface {
@@ -25,11 +25,11 @@ type Notifier interface {
 	// of the opts are dependent on each implementation.
 	//
 	// Notifier may use the icon for notifications.
-	Register(event string, icon Icon, opts map[string]interface{}) error
+	Register(event string, icon Icon, opts map[string]any) error
 
 	// Notify notifies the named event by the specified title and body.
 	Notify(event, title, body string) error
 
 	// Sys returns the implementation of the Notifier.
-	Sys() interface{}
+	Sys() any
 }

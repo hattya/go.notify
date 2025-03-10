@@ -84,7 +84,7 @@ type NotifyIcon struct {
 	mu    sync.Mutex
 	data  sys.NotifyIconData
 	added int32
-	ev    chan interface{}
+	ev    chan any
 	done  chan struct{}
 }
 
@@ -95,7 +95,7 @@ func New(name string) (ni *NotifyIcon, err error) {
 		Menu:    make(chan MenuEvent),
 		name:    name,
 		err:     make(chan error, 1),
-		ev:      make(chan interface{}),
+		ev:      make(chan any),
 		done:    make(chan struct{}),
 	}
 	// shell32.dll version

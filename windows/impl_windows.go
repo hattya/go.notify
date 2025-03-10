@@ -1,7 +1,7 @@
 //
 // go.notify/windows :: impl_windows.go
 //
-//   Copyright (c) 2017-2019 Akinori Hattori <hattya@gmail.com>
+//   Copyright (c) 2017-2025 Akinori Hattori <hattya@gmail.com>
 //
 //   SPDX-License-Identifier: MIT
 //
@@ -50,7 +50,7 @@ func (p *notifier) Close() error {
 	return p.ni.Close()
 }
 
-func (p *notifier) Register(event string, icon notify.Icon, opts map[string]interface{}) error {
+func (p *notifier) Register(event string, icon notify.Icon, opts map[string]any) error {
 	loadIconI := func(i int64) (notify.Icon, error) {
 		if 0 <= i && i <= math.MaxUint16 {
 			return LoadIcon(uint16(i))
@@ -142,6 +142,6 @@ func (p *notifier) Notify(event, title, body string) error {
 	return p.ni.Notify(n)
 }
 
-func (p *notifier) Sys() interface{} {
+func (p *notifier) Sys() any {
 	return p.ni
 }

@@ -1,7 +1,7 @@
 //
 // go.notify/freedesktop :: notify.go
 //
-//   Copyright (c) 2017-2024 Akinori Hattori <hattya@gmail.com>
+//   Copyright (c) 2017-2025 Akinori Hattori <hattya@gmail.com>
 //
 //   SPDX-License-Identifier: MIT
 //
@@ -251,14 +251,14 @@ func (c *Client) signal() {
 //
 // See https://developer.gnome.org/notification-spec/#basic-design for details.
 type Notification struct {
-	Name    string                 // Application Name
-	ID      uint32                 // Replaces ID
-	Icon    string                 // Notification Icon
-	Summary string                 // Summary
-	Body    string                 // Body
-	Actions []string               // Actions
-	Hints   map[string]interface{} // Hints
-	Timeout int32                  // Expiration Timeout
+	Name    string         // Application Name
+	ID      uint32         // Replaces ID
+	Icon    string         // Notification Icon
+	Summary string         // Summary
+	Body    string         // Body
+	Actions []string       // Actions
+	Hints   map[string]any // Hints
+	Timeout int32          // Expiration Timeout
 }
 
 // Action adds (or replaces) the specified action to the Notification.
@@ -276,9 +276,9 @@ func (n *Notification) Action(key, label string) {
 //
 // See https://developer.gnome.org/notification-spec/#hints for available
 // hints.
-func (n *Notification) Hint(name string, value interface{}) error {
+func (n *Notification) Hint(name string, value any) error {
 	if n.Hints == nil {
-		n.Hints = make(map[string]interface{})
+		n.Hints = make(map[string]any)
 	}
 	var err error
 	switch name {
@@ -308,7 +308,7 @@ func (n *Notification) Hint(name string, value interface{}) error {
 	return nil
 }
 
-func v2i(name string, value interface{}) (i int32, err error) {
+func v2i(name string, value any) (i int32, err error) {
 	int2i := func(i int64) (int32, bool) {
 		if math.MinInt32 <= i && i <= math.MaxInt32 {
 			return int32(i), true
@@ -352,7 +352,7 @@ func v2i(name string, value interface{}) (i int32, err error) {
 	return
 }
 
-func v2y(name string, value interface{}) (y uint8, err error) {
+func v2y(name string, value any) (y uint8, err error) {
 	int2y := func(i int64) (uint8, bool) {
 		if 0 <= i && i <= math.MaxUint8 {
 			return uint8(i), true

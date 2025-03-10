@@ -1,7 +1,7 @@
 //
 // go.notify/gntp :: impl.go
 //
-//   Copyright (c) 2017-2019 Akinori Hattori <hattya@gmail.com>
+//   Copyright (c) 2017-2025 Akinori Hattori <hattya@gmail.com>
 //
 //   SPDX-License-Identifier: MIT
 //
@@ -61,7 +61,7 @@ func (p *notifier) Notify(event, title, body string) error {
 	return err
 }
 
-func (p *notifier) Register(event string, icon notify.Icon, opts map[string]interface{}) error {
+func (p *notifier) Register(event string, icon notify.Icon, opts map[string]any) error {
 	n := &Notification{
 		Name:    event,
 		Enabled: true,
@@ -148,6 +148,6 @@ func (p *notifier) Register(event string, icon notify.Icon, opts map[string]inte
 	return err
 }
 
-func (p *notifier) Sys() interface{} {
+func (p *notifier) Sys() any {
 	return p.c
 }

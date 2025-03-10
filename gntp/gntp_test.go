@@ -138,7 +138,7 @@ func TestRegister(t *testing.T) {
 	c.Icon = nil
 	for _, tt := range []struct {
 		encrypt bool
-		value   interface{}
+		value   any
 	}{
 		// plain text
 		{false, "string"},
@@ -342,7 +342,7 @@ func TestNotify(t *testing.T) {
 	c.Icon = nil
 	for _, tt := range []struct {
 		encrypt bool
-		value   interface{}
+		value   any
 	}{
 		// plain text
 		{false, "string"},

@@ -1,7 +1,7 @@
 //
 // go.notify/freedesktop :: impl_test.go
 //
-//   Copyright (c) 2017-2020 Akinori Hattori <hattya@gmail.com>
+//   Copyright (c) 2017-2025 Akinori Hattori <hattya@gmail.com>
 //
 //   SPDX-License-Identifier: MIT
 //
@@ -56,9 +56,9 @@ func TestNotifierRegister(t *testing.T) {
 		t.Error("expected error")
 	}
 
-	for _, opts := range []map[string]interface{}{
+	for _, opts := range []map[string]any{
 		{"freedesktop:actions": map[string]string{"default": "Default"}},
-		{"freedesktop:hints": map[string]interface{}{"urgency": 1}},
+		{"freedesktop:hints": map[string]any{"urgency": 1}},
 		{"freedesktop:timeout": 0},
 	} {
 		if err := n.Register("event", "path", opts); err != nil {
@@ -66,9 +66,9 @@ func TestNotifierRegister(t *testing.T) {
 		}
 	}
 	// error
-	for _, opts := range []map[string]interface{}{
+	for _, opts := range []map[string]any{
 		{"freedesktop:actions": nil},
-		{"freedesktop:hints": map[string]interface{}{"urgency": math.MaxUint8 + 1}},
+		{"freedesktop:hints": map[string]any{"urgency": math.MaxUint8 + 1}},
 		{"freedesktop:hints": nil},
 		{"freedesktop:timeout": nil},
 	} {
@@ -86,7 +86,7 @@ func TestNotifierNotify(t *testing.T) {
 	defer n.Close()
 
 	c := n.Sys().(*freedesktop.Client)
-	c.MockMethodCall(&dbus.Call{Body: []interface{}{uint32(1)}})
+	c.MockMethodCall(&dbus.Call{Body: []any{uint32(1)}})
 	if err := n.Register("event", "path", nil); err != nil {
 		t.Fatal(err)
 	}
