@@ -18,10 +18,11 @@ const _BalloonEvent_name = "BalloonShownBalloonClosedBalloonClicked"
 var _BalloonEvent_index = [...]uint8{0, 12, 25, 39}
 
 func (i BalloonEvent) String() string {
-	if i >= BalloonEvent(len(_BalloonEvent_index)-1) {
+	idx := int(i) - 0
+	if i < 0 || idx >= len(_BalloonEvent_index)-1 {
 		return "BalloonEvent(" + strconv.FormatInt(int64(i), 10) + ")"
 	}
-	return _BalloonEvent_name[_BalloonEvent_index[i]:_BalloonEvent_index[i+1]]
+	return _BalloonEvent_name[_BalloonEvent_index[idx]:_BalloonEvent_index[idx+1]]
 }
 func _() {
 	// An "invalid array index" compiler error signifies that the constant values have changed.
@@ -39,8 +40,9 @@ const _IconType_name = "IconNoneIconInfoIconWarnIconErrorIconUser"
 var _IconType_index = [...]uint8{0, 8, 16, 24, 33, 41}
 
 func (i IconType) String() string {
-	if i >= IconType(len(_IconType_index)-1) {
+	idx := int(i) - 0
+	if i < 0 || idx >= len(_IconType_index)-1 {
 		return "IconType(" + strconv.FormatInt(int64(i), 10) + ")"
 	}
-	return _IconType_name[_IconType_index[i]:_IconType_index[i+1]]
+	return _IconType_name[_IconType_index[idx]:_IconType_index[idx+1]]
 }

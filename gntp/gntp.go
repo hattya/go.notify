@@ -1,12 +1,12 @@
 //
 // go.notify/gntp :: gntp.go
 //
-//   Copyright (c) 2017-2025 Akinori Hattori <hattya@gmail.com>
+//   Copyright (c) 2017-2026 Akinori Hattori <hattya@gmail.com>
 //
 //   SPDX-License-Identifier: MIT
 //
 
-//go:generate stringer -type HashAlgorithm,Result -output gntp_string.go
+//go:generate go tool stringer -type HashAlgorithm,Result -output gntp_string.go
 
 // Package gntp implements the Growl Notification Transport Protocol version
 // 1.0.

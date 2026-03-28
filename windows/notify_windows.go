@@ -1,12 +1,12 @@
 //
 // go.notify/windows :: notify_windows.go
 //
-//   Copyright (c) 2017-2025 Akinori Hattori <hattya@gmail.com>
+//   Copyright (c) 2017-2026 Akinori Hattori <hattya@gmail.com>
 //
 //   SPDX-License-Identifier: MIT
 //
 
-//go:generate stringer -type BalloonEvent,IconType -output notify_string_windows.go
+//go:generate go tool stringer -type BalloonEvent,IconType -output notify_string_windows.go
 
 // Package windows implements the Windows Notifications.
 //
@@ -452,6 +452,7 @@ const (
 // Icon represents a handle of the icon.
 type Icon struct {
 	h windows.Handle
+	c runtime.Cleanup
 }
 
 // LoadImage returns a new Icon from the specified img.
@@ -530,7 +531,9 @@ func LoadImage(img image.Image) (icon *Icon, err error) {
 	})
 	if err == nil {
 		icon = &Icon{h: h}
-		runtime.SetFinalizer(icon, (*Icon).Close)
+		icon.c = runtime.AddCleanup(icon, func(h windows.Handle) {
+			sys.DestroyIcon(h)
+		}, icon.h)
 	}
 	return
 }
@@ -550,9 +553,8 @@ func LoadIcon(i uint16) (icon *Icon, err error) {
 
 // Close destroys the Icon.
 func (icon *Icon) Close() error {
-	err := sys.DestroyIcon(icon.h)
-	runtime.SetFinalizer(icon, nil)
-	return err
+	icon.c.Stop()
+	return sys.DestroyIcon(icon.h)
 }
 
 // GUID represents a textual representation of the GUID.

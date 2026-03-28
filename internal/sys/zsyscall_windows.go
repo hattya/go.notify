@@ -79,7 +79,7 @@ var (
 )
 
 func CreateCompatibleBitmap(dc windows.Handle, w int32, h int32) (bm windows.Handle, err error) {
-	r0, _, e1 := syscall.Syscall(procCreateCompatibleBitmap.Addr(), 3, uintptr(dc), uintptr(w), uintptr(h))
+	r0, _, e1 := syscall.SyscallN(procCreateCompatibleBitmap.Addr(), uintptr(dc), uintptr(w), uintptr(h))
 	bm = windows.Handle(r0)
 	if bm == 0 {
 		err = errnoErr(e1)
@@ -88,7 +88,7 @@ func CreateCompatibleBitmap(dc windows.Handle, w int32, h int32) (bm windows.Han
 }
 
 func CreateCompatibleDC(dc windows.Handle) (mdc windows.Handle, err error) {
-	r0, _, e1 := syscall.Syscall(procCreateCompatibleDC.Addr(), 1, uintptr(dc), 0, 0)
+	r0, _, e1 := syscall.SyscallN(procCreateCompatibleDC.Addr(), uintptr(dc))
 	mdc = windows.Handle(r0)
 	if mdc == 0 {
 		err = errnoErr(e1)
@@ -97,7 +97,7 @@ func CreateCompatibleDC(dc windows.Handle) (mdc windows.Handle, err error) {
 }
 
 func DeleteDC(dc windows.Handle) (err error) {
-	r1, _, e1 := syscall.Syscall(procDeleteDC.Addr(), 1, uintptr(dc), 0, 0)
+	r1, _, e1 := syscall.SyscallN(procDeleteDC.Addr(), uintptr(dc))
 	if r1 == 0 {
 		err = errnoErr(e1)
 	}
@@ -105,7 +105,7 @@ func DeleteDC(dc windows.Handle) (err error) {
 }
 
 func DeleteObject(obj windows.Handle) (err error) {
-	r1, _, e1 := syscall.Syscall(procDeleteObject.Addr(), 1, uintptr(obj), 0, 0)
+	r1, _, e1 := syscall.SyscallN(procDeleteObject.Addr(), uintptr(obj))
 	if r1 == 0 {
 		err = errnoErr(e1)
 	}
@@ -113,7 +113,7 @@ func DeleteObject(obj windows.Handle) (err error) {
 }
 
 func SelectObject(dc windows.Handle, obj windows.Handle) (oldobj windows.Handle, err error) {
-	r0, _, e1 := syscall.Syscall(procSelectObject.Addr(), 2, uintptr(dc), uintptr(obj), 0)
+	r0, _, e1 := syscall.SyscallN(procSelectObject.Addr(), uintptr(dc), uintptr(obj))
 	oldobj = windows.Handle(r0)
 	if oldobj == 0 {
 		err = errnoErr(e1)
@@ -122,7 +122,7 @@ func SelectObject(dc windows.Handle, obj windows.Handle) (oldobj windows.Handle,
 }
 
 func SetPixel(dc windows.Handle, x int32, y int32, color uint32) (err error) {
-	r1, _, e1 := syscall.Syscall6(procSetPixel.Addr(), 4, uintptr(dc), uintptr(x), uintptr(y), uintptr(color), 0, 0)
+	r1, _, e1 := syscall.SyscallN(procSetPixel.Addr(), uintptr(dc), uintptr(x), uintptr(y), uintptr(color))
 	if r1 == ^uintptr(0) {
 		err = errnoErr(e1)
 	}
@@ -130,7 +130,7 @@ func SetPixel(dc windows.Handle, x int32, y int32, color uint32) (err error) {
 }
 
 func GetModuleHandle(name *uint16) (h windows.Handle, err error) {
-	r0, _, e1 := syscall.Syscall(procGetModuleHandleW.Addr(), 1, uintptr(unsafe.Pointer(name)), 0, 0)
+	r0, _, e1 := syscall.SyscallN(procGetModuleHandleW.Addr(), uintptr(unsafe.Pointer(name)))
 	h = windows.Handle(r0)
 	if h == 0 {
 		err = errnoErr(e1)
@@ -139,7 +139,7 @@ func GetModuleHandle(name *uint16) (h windows.Handle, err error) {
 }
 
 func Shell_NotifyIcon(message uint32, data *NotifyIconData) (err error) {
-	r1, _, e1 := syscall.Syscall(procShell_NotifyIconW.Addr(), 2, uintptr(message), uintptr(unsafe.Pointer(data)), 0)
+	r1, _, e1 := syscall.SyscallN(procShell_NotifyIconW.Addr(), uintptr(message), uintptr(unsafe.Pointer(data)))
 	if r1 == 0 {
 		err = errnoErr(e1)
 	}
@@ -147,7 +147,7 @@ func Shell_NotifyIcon(message uint32, data *NotifyIconData) (err error) {
 }
 
 func AppendMenu(menu windows.Handle, flags uint32, id uintptr, item *uint16) (err error) {
-	r1, _, e1 := syscall.Syscall6(procAppendMenuW.Addr(), 4, uintptr(menu), uintptr(flags), uintptr(id), uintptr(unsafe.Pointer(item)), 0, 0)
+	r1, _, e1 := syscall.SyscallN(procAppendMenuW.Addr(), uintptr(menu), uintptr(flags), uintptr(id), uintptr(unsafe.Pointer(item)))
 	if r1 == 0 {
 		err = errnoErr(e1)
 	}
@@ -155,7 +155,7 @@ func AppendMenu(menu windows.Handle, flags uint32, id uintptr, item *uint16) (er
 }
 
 func CreateIconIndirect(ii *IconInfo) (icon windows.Handle, err error) {
-	r0, _, e1 := syscall.Syscall(procCreateIconIndirect.Addr(), 1, uintptr(unsafe.Pointer(ii)), 0, 0)
+	r0, _, e1 := syscall.SyscallN(procCreateIconIndirect.Addr(), uintptr(unsafe.Pointer(ii)))
 	icon = windows.Handle(r0)
 	if icon == 0 {
 		err = errnoErr(e1)
@@ -164,7 +164,7 @@ func CreateIconIndirect(ii *IconInfo) (icon windows.Handle, err error) {
 }
 
 func CreatePopupMenu() (menu windows.Handle, err error) {
-	r0, _, e1 := syscall.Syscall(procCreatePopupMenu.Addr(), 0, 0, 0, 0)
+	r0, _, e1 := syscall.SyscallN(procCreatePopupMenu.Addr())
 	menu = windows.Handle(r0)
 	if menu == 0 {
 		err = errnoErr(e1)
@@ -173,7 +173,7 @@ func CreatePopupMenu() (menu windows.Handle, err error) {
 }
 
 func CreateWindowEx(exStyle uint32, className *uint16, windowName *uint16, style uint32, x int32, y int32, w int32, h int32, parent windows.Handle, menu windows.Handle, inst windows.Handle, param unsafe.Pointer) (wnd windows.Handle, err error) {
-	r0, _, e1 := syscall.Syscall12(procCreateWindowExW.Addr(), 12, uintptr(exStyle), uintptr(unsafe.Pointer(className)), uintptr(unsafe.Pointer(windowName)), uintptr(style), uintptr(x), uintptr(y), uintptr(w), uintptr(h), uintptr(parent), uintptr(menu), uintptr(inst), uintptr(param))
+	r0, _, e1 := syscall.SyscallN(procCreateWindowExW.Addr(), uintptr(exStyle), uintptr(unsafe.Pointer(className)), uintptr(unsafe.Pointer(windowName)), uintptr(style), uintptr(x), uintptr(y), uintptr(w), uintptr(h), uintptr(parent), uintptr(menu), uintptr(inst), uintptr(param))
 	wnd = windows.Handle(r0)
 	if wnd == 0 {
 		err = errnoErr(e1)
@@ -182,13 +182,13 @@ func CreateWindowEx(exStyle uint32, className *uint16, windowName *uint16, style
 }
 
 func DefWindowProc(wnd windows.Handle, msg uint32, wParam uintptr, lParam uintptr) (res uintptr) {
-	r0, _, _ := syscall.Syscall6(procDefWindowProcW.Addr(), 4, uintptr(wnd), uintptr(msg), uintptr(wParam), uintptr(lParam), 0, 0)
+	r0, _, _ := syscall.SyscallN(procDefWindowProcW.Addr(), uintptr(wnd), uintptr(msg), uintptr(wParam), uintptr(lParam))
 	res = uintptr(r0)
 	return
 }
 
 func DestroyIcon(icon windows.Handle) (err error) {
-	r1, _, e1 := syscall.Syscall(procDestroyIcon.Addr(), 1, uintptr(icon), 0, 0)
+	r1, _, e1 := syscall.SyscallN(procDestroyIcon.Addr(), uintptr(icon))
 	if r1 == 0 {
 		err = errnoErr(e1)
 	}
@@ -196,7 +196,7 @@ func DestroyIcon(icon windows.Handle) (err error) {
 }
 
 func DestroyMenu(menu windows.Handle) (err error) {
-	r1, _, e1 := syscall.Syscall(procDestroyMenu.Addr(), 1, uintptr(menu), 0, 0)
+	r1, _, e1 := syscall.SyscallN(procDestroyMenu.Addr(), uintptr(menu))
 	if r1 == 0 {
 		err = errnoErr(e1)
 	}
@@ -204,7 +204,7 @@ func DestroyMenu(menu windows.Handle) (err error) {
 }
 
 func DestroyWindow(wnd windows.Handle) (err error) {
-	r1, _, e1 := syscall.Syscall(procDestroyWindow.Addr(), 1, uintptr(wnd), 0, 0)
+	r1, _, e1 := syscall.SyscallN(procDestroyWindow.Addr(), uintptr(wnd))
 	if r1 == 0 {
 		err = errnoErr(e1)
 	}
@@ -212,13 +212,13 @@ func DestroyWindow(wnd windows.Handle) (err error) {
 }
 
 func DispatchMessage(msg *Msg) (res uintptr) {
-	r0, _, _ := syscall.Syscall(procDispatchMessageW.Addr(), 1, uintptr(unsafe.Pointer(msg)), 0, 0)
+	r0, _, _ := syscall.SyscallN(procDispatchMessageW.Addr(), uintptr(unsafe.Pointer(msg)))
 	res = uintptr(r0)
 	return
 }
 
 func GetCursorPos(pt *Point) (err error) {
-	r1, _, e1 := syscall.Syscall(procGetCursorPos.Addr(), 1, uintptr(unsafe.Pointer(pt)), 0, 0)
+	r1, _, e1 := syscall.SyscallN(procGetCursorPos.Addr(), uintptr(unsafe.Pointer(pt)))
 	if r1 == 0 {
 		err = errnoErr(e1)
 	}
@@ -226,7 +226,7 @@ func GetCursorPos(pt *Point) (err error) {
 }
 
 func GetDC(wnd windows.Handle) (dc windows.Handle, err error) {
-	r0, _, e1 := syscall.Syscall(procGetDC.Addr(), 1, uintptr(wnd), 0, 0)
+	r0, _, e1 := syscall.SyscallN(procGetDC.Addr(), uintptr(wnd))
 	dc = windows.Handle(r0)
 	if dc == 0 {
 		err = errnoErr(e1)
@@ -235,7 +235,7 @@ func GetDC(wnd windows.Handle) (dc windows.Handle, err error) {
 }
 
 func GetMessage(msg *Msg, wnd windows.Handle, msgFilterMin uint32, msgFilterMax uint32) (ret int32, err error) {
-	r0, _, e1 := syscall.Syscall6(procGetMessageW.Addr(), 4, uintptr(unsafe.Pointer(msg)), uintptr(wnd), uintptr(msgFilterMin), uintptr(msgFilterMax), 0, 0)
+	r0, _, e1 := syscall.SyscallN(procGetMessageW.Addr(), uintptr(unsafe.Pointer(msg)), uintptr(wnd), uintptr(msgFilterMin), uintptr(msgFilterMax))
 	ret = int32(r0)
 	if ret == -1 {
 		err = errnoErr(e1)
@@ -244,7 +244,7 @@ func GetMessage(msg *Msg, wnd windows.Handle, msgFilterMin uint32, msgFilterMax 
 }
 
 func getWindowLongPtr(wnd windows.Handle, i int32) (ptr uintptr, err error) {
-	r0, _, e1 := syscall.Syscall(procGetWindowLongPtrW.Addr(), 2, uintptr(wnd), uintptr(i), 0)
+	r0, _, e1 := syscall.SyscallN(procGetWindowLongPtrW.Addr(), uintptr(wnd), uintptr(i))
 	ptr = uintptr(r0)
 	if ptr == 0 {
 		err = errnoErr(e1)
@@ -253,7 +253,7 @@ func getWindowLongPtr(wnd windows.Handle, i int32) (ptr uintptr, err error) {
 }
 
 func getWindowLong(wnd windows.Handle, i int32) (ptr uintptr, err error) {
-	r0, _, e1 := syscall.Syscall(procGetWindowLongW.Addr(), 2, uintptr(wnd), uintptr(i), 0)
+	r0, _, e1 := syscall.SyscallN(procGetWindowLongW.Addr(), uintptr(wnd), uintptr(i))
 	ptr = uintptr(r0)
 	if ptr == 0 {
 		err = errnoErr(e1)
@@ -262,7 +262,7 @@ func getWindowLong(wnd windows.Handle, i int32) (ptr uintptr, err error) {
 }
 
 func LoadImage(inst windows.Handle, name *uint16, typ uint32, cxDesired int32, cyDesired int32, load uint32) (h windows.Handle, err error) {
-	r0, _, e1 := syscall.Syscall6(procLoadImageW.Addr(), 6, uintptr(inst), uintptr(unsafe.Pointer(name)), uintptr(typ), uintptr(cxDesired), uintptr(cyDesired), uintptr(load))
+	r0, _, e1 := syscall.SyscallN(procLoadImageW.Addr(), uintptr(inst), uintptr(unsafe.Pointer(name)), uintptr(typ), uintptr(cxDesired), uintptr(cyDesired), uintptr(load))
 	h = windows.Handle(r0)
 	if h == 0 {
 		err = errnoErr(e1)
@@ -271,7 +271,7 @@ func LoadImage(inst windows.Handle, name *uint16, typ uint32, cxDesired int32, c
 }
 
 func PostMessage(wnd windows.Handle, msg uint32, wParam uintptr, lParam uintptr) (err error) {
-	r1, _, e1 := syscall.Syscall6(procPostMessageW.Addr(), 4, uintptr(wnd), uintptr(msg), uintptr(wParam), uintptr(lParam), 0, 0)
+	r1, _, e1 := syscall.SyscallN(procPostMessageW.Addr(), uintptr(wnd), uintptr(msg), uintptr(wParam), uintptr(lParam))
 	if r1 == 0 {
 		err = errnoErr(e1)
 	}
@@ -279,12 +279,12 @@ func PostMessage(wnd windows.Handle, msg uint32, wParam uintptr, lParam uintptr)
 }
 
 func PostQuitMessage(exitCode int32) {
-	syscall.Syscall(procPostQuitMessage.Addr(), 1, uintptr(exitCode), 0, 0)
+	syscall.SyscallN(procPostQuitMessage.Addr(), uintptr(exitCode))
 	return
 }
 
 func RegisterClassEx(wcx *WndClassEx) (atom uint16, err error) {
-	r0, _, e1 := syscall.Syscall(procRegisterClassExW.Addr(), 1, uintptr(unsafe.Pointer(wcx)), 0, 0)
+	r0, _, e1 := syscall.SyscallN(procRegisterClassExW.Addr(), uintptr(unsafe.Pointer(wcx)))
 	atom = uint16(r0)
 	if atom == 0 {
 		err = errnoErr(e1)
@@ -293,7 +293,7 @@ func RegisterClassEx(wcx *WndClassEx) (atom uint16, err error) {
 }
 
 func RegisterWindowMessage(s *uint16) (msg uint32, err error) {
-	r0, _, e1 := syscall.Syscall(procRegisterWindowMessageW.Addr(), 1, uintptr(unsafe.Pointer(s)), 0, 0)
+	r0, _, e1 := syscall.SyscallN(procRegisterWindowMessageW.Addr(), uintptr(unsafe.Pointer(s)))
 	msg = uint32(r0)
 	if msg == 0 {
 		err = errnoErr(e1)
@@ -302,7 +302,7 @@ func RegisterWindowMessage(s *uint16) (msg uint32, err error) {
 }
 
 func ReleaseDC(wnd windows.Handle, dc windows.Handle) (err error) {
-	r1, _, e1 := syscall.Syscall(procReleaseDC.Addr(), 2, uintptr(wnd), uintptr(dc), 0)
+	r1, _, e1 := syscall.SyscallN(procReleaseDC.Addr(), uintptr(wnd), uintptr(dc))
 	if r1 == 0 {
 		err = errnoErr(e1)
 	}
@@ -310,7 +310,7 @@ func ReleaseDC(wnd windows.Handle, dc windows.Handle) (err error) {
 }
 
 func SetForegroundWindow(wnd windows.Handle) (err error) {
-	r1, _, e1 := syscall.Syscall(procSetForegroundWindow.Addr(), 1, uintptr(wnd), 0, 0)
+	r1, _, e1 := syscall.SyscallN(procSetForegroundWindow.Addr(), uintptr(wnd))
 	if r1 == 0 {
 		err = errnoErr(e1)
 	}
@@ -318,7 +318,7 @@ func SetForegroundWindow(wnd windows.Handle) (err error) {
 }
 
 func setWindowLongPtr(wnd windows.Handle, i int32, ptr unsafe.Pointer) (oldptr uintptr, err error) {
-	r0, _, e1 := syscall.Syscall(procSetWindowLongPtrW.Addr(), 3, uintptr(wnd), uintptr(i), uintptr(ptr))
+	r0, _, e1 := syscall.SyscallN(procSetWindowLongPtrW.Addr(), uintptr(wnd), uintptr(i), uintptr(ptr))
 	oldptr = uintptr(r0)
 	if oldptr == 0 {
 		err = errnoErr(e1)
@@ -327,7 +327,7 @@ func setWindowLongPtr(wnd windows.Handle, i int32, ptr unsafe.Pointer) (oldptr u
 }
 
 func setWindowLong(wnd windows.Handle, i int32, ptr unsafe.Pointer) (oldptr uintptr, err error) {
-	r0, _, e1 := syscall.Syscall(procSetWindowLongW.Addr(), 3, uintptr(wnd), uintptr(i), uintptr(ptr))
+	r0, _, e1 := syscall.SyscallN(procSetWindowLongW.Addr(), uintptr(wnd), uintptr(i), uintptr(ptr))
 	oldptr = uintptr(r0)
 	if oldptr == 0 {
 		err = errnoErr(e1)
@@ -336,7 +336,7 @@ func setWindowLong(wnd windows.Handle, i int32, ptr unsafe.Pointer) (oldptr uint
 }
 
 func TrackPopupMenu(menu windows.Handle, flags uint32, x int32, y int32, reserved int32, wnd windows.Handle) (ret int32, err error) {
-	r0, _, e1 := syscall.Syscall6(procTrackPopupMenu.Addr(), 6, uintptr(menu), uintptr(flags), uintptr(x), uintptr(y), uintptr(reserved), uintptr(wnd))
+	r0, _, e1 := syscall.SyscallN(procTrackPopupMenu.Addr(), uintptr(menu), uintptr(flags), uintptr(x), uintptr(y), uintptr(reserved), uintptr(wnd))
 	ret = int32(r0)
 	if ret == 0 {
 		err = errnoErr(e1)
@@ -345,7 +345,7 @@ func TrackPopupMenu(menu windows.Handle, flags uint32, x int32, y int32, reserve
 }
 
 func TranslateMessage(msg *Msg) (err error) {
-	r1, _, e1 := syscall.Syscall(procTranslateMessage.Addr(), 1, uintptr(unsafe.Pointer(msg)), 0, 0)
+	r1, _, e1 := syscall.SyscallN(procTranslateMessage.Addr(), uintptr(unsafe.Pointer(msg)))
 	if r1 == 0 {
 		err = errnoErr(e1)
 	}

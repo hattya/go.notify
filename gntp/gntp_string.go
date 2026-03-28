@@ -19,10 +19,11 @@ const _HashAlgorithm_name = "MD5SHA1SHA256SHA512"
 var _HashAlgorithm_index = [...]uint8{0, 3, 7, 13, 19}
 
 func (i HashAlgorithm) String() string {
-	if i < 0 || i >= HashAlgorithm(len(_HashAlgorithm_index)-1) {
+	idx := int(i) - 0
+	if i < 0 || idx >= len(_HashAlgorithm_index)-1 {
 		return "HashAlgorithm(" + strconv.FormatInt(int64(i), 10) + ")"
 	}
-	return _HashAlgorithm_name[_HashAlgorithm_index[i]:_HashAlgorithm_index[i+1]]
+	return _HashAlgorithm_name[_HashAlgorithm_index[idx]:_HashAlgorithm_index[idx+1]]
 }
 func _() {
 	// An "invalid array index" compiler error signifies that the constant values have changed.
@@ -38,9 +39,9 @@ const _Result_name = "CLICKEDCLOSEDTIMEOUT"
 var _Result_index = [...]uint8{0, 7, 13, 20}
 
 func (i Result) String() string {
-	i -= 1
-	if i < 0 || i >= Result(len(_Result_index)-1) {
-		return "Result(" + strconv.FormatInt(int64(i+1), 10) + ")"
+	idx := int(i) - 1
+	if i < 1 || idx >= len(_Result_index)-1 {
+		return "Result(" + strconv.FormatInt(int64(i), 10) + ")"
 	}
-	return _Result_name[_Result_index[i]:_Result_index[i+1]]
+	return _Result_name[_Result_index[idx]:_Result_index[idx+1]]
 }

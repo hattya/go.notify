@@ -1,12 +1,12 @@
 //
 // go.notify/internal/sys :: syscall_windows.go
 //
-//   Copyright (c) 2017-2023 Akinori Hattori <hattya@gmail.com>
+//   Copyright (c) 2017-2026 Akinori Hattori <hattya@gmail.com>
 //
 //   SPDX-License-Identifier: MIT
 //
 
-//go:generate go run golang.org/x/sys/windows/mkwinsyscall -output z$GOFILE $GOFILE
+//go:generate go tool mkwinsyscall -output z$GOFILE $GOFILE
 
 package sys
 
